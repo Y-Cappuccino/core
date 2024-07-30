@@ -34,7 +34,7 @@ class YCappuccinoComponentLoader(abc.ABC):
     def loads(self) -> ModuleType: ...
 
 
-@ComponentFactory("FileComponentDiscovery-Factory")
+@ComponentFactory("YCappuccinoComponentLoaderImpl-Factory")
 @Provides(specifications=[IYCappuccinoComponentLoader.__name__])
 @Requires("_component_discovery", IComponentDiscovery.__name__)
 @Instantiate("FileComponentDiscovery")
