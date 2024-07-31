@@ -52,10 +52,15 @@ class TestComponentDiscovery(object):
         await self.discovery.discover(self.discovery.path)
         # When
         assert len(self.framework.component_repository.components) == 3
-        i = 0
-        async for component in self.framework.component_repository.get_all():
-            # Then
-            assert component.module_name == component_discovered[i].module_name
-            assert component.module.__name__ == component_discovered[i].module.__name__
-            assert component.path == component_discovered[i].path.replace(os.sep, "/")
-            i += 1
+        for component_assert in component_discovered:
+            # then
+            component_discovered = await self.framework.component_repository.get(
+                component_assert.module_name
+            )
+            assert component_discovered.module_name == component_assert.module_name
+            assert (
+                component_discovered.module.__name__ == component_assert.module.__name__
+            )
+            assert component_discovered.path == component_assert.path.replace(
+                os.sep, "/"
+            )

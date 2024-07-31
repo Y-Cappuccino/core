@@ -28,7 +28,10 @@ from ycappuccino.core.repositories.component_repositories import IComponentRepos
 from pelix.framework import Bundle, BundleContext
 
 
-class YCappuccinoComponentLoader(abc.ABC):
+class ComponentLoader(abc.ABC):
+
+    def __init__(self):
+        self._component_discovery = None
 
     @abc.abstractmethod
     def generate(self, component_discovered: ComponentDiscovered) -> ModuleType: ...
@@ -44,11 +47,11 @@ class YCappuccinoComponentLoader(abc.ABC):
     def loads(self) -> ModuleType: ...
 
 
-@ComponentFactory("FileComponentDiscovery-Factory")
+@ComponentFactory("FileComponentLoader-Factory")
 @Provides(specifications=[IYCappuccinoComponentLoader.__name__])
-@Requires("component_discovery", IComponentDiscovery.__name__)
-@Instantiate("FileComponentDiscovery")
-class YCappuccinoComponentLoaderImpl(YCappuccinoComponentLoader):
+@Requires("_component_discovery", IComponentDiscovery.__name__)
+@Instantiate("FileComponentLoader")
+class FileComponentLoader(ComponentLoader):
     """
     class that allow to generate from ycapuccino components pelix components in order to be loaded by the pelix framework
     """
@@ -71,7 +74,9 @@ class YCappuccinoComponentLoaderImpl(YCappuccinoComponentLoader):
     def in_validate(self, a_context: BundleContext) -> None:
         self.context = None
 
-    def generate(self, component_discovered: ComponentDiscovered) -> GeneratedComponent:
+    async def generate(
+        self, component_discovered: ComponentDiscovered
+    ) -> GeneratedComponent:
 
         module_name = component_discovered.module_name
         module = component_discovered.module
@@ -94,7 +99,7 @@ class YCappuccinoComponentLoaderImpl(YCappuccinoComponentLoader):
                 "\n".join(content_original_file),
             )
             if list_matches is not None and len(list_matches) > 0:
-                content = content + self.generate_component(
+                content = content + await self.generate_component(
                     ycappuccino_component,
                     list_ycappuccino_component,
                     module,
@@ -102,7 +107,7 @@ class YCappuccinoComponentLoaderImpl(YCappuccinoComponentLoader):
 
         return GeneratedComponent(module_name=pelix_module_name, content=content)
 
-    def generate_component(
+    async def generate_component(
         self,
         ycappuccino_component: type,
         list_ycappuccino_component: list[type],
@@ -122,21 +127,21 @@ class YCappuccinoComponentLoaderImpl(YCappuccinoComponentLoader):
         )
         parameters: list[str] = []
         args_new: list[str] = self.get_arg_new(props.get("all"))  # type: ignore
-        properties: list[str] = self.get_dumps(
+        properties: list[str] = await self.get_dumps(
             kind="Property",
             parameter_dump=parameters,
             dec_tuple=props.get("properties"),  # type: ignore
         )
-        requires: list[str] = self.get_dumps(
+        requires: list[str] = await self.get_dumps(
             kind="Requires",
             parameter_dump=parameters,
             dec_tuple=props.get("requires"),  # type: ignore
         )
-        bind_methods: list[str] = self.get_bind_dumps(
+        bind_methods: list[str] = await self.get_bind_dumps(
             dec_tuple=props.get("binds"),  # type: ignore
         )
 
-        return self.get_pelix_module_str(
+        return await self.get_pelix_module_str(
             bind_methods=bind_methods,
             requires=requires,
             properties=properties,
@@ -149,7 +154,7 @@ class YCappuccinoComponentLoaderImpl(YCappuccinoComponentLoader):
         )
 
     @staticmethod
-    def get_pelix_module_str(
+    async def get_pelix_module_str(
         bind_methods: list[str],
         requires: list[str],
         properties: list[str],
@@ -205,14 +210,16 @@ class YCappuccinoComponentLoaderImpl(YCappuccinoComponentLoader):
                               self._context = None
                       """
 
-    def load_discovered(self, component_discovered: ComponentDiscovered) -> Bundle:
+    async def load_discovered(
+        self, component_discovered: ComponentDiscovered
+    ) -> Bundle:
         bundle = self.context.install_bundle(
             component_discovered.module_name, component_discovered.path
         )
         bundle.start()
         return bundle
 
-    def load_generated(self, component_generated: GeneratedComponent) -> Bundle:
+    async def load_generated(self, component_generated: GeneratedComponent) -> Bundle:
         mymodule = ModuleType(component_generated.module_name)
         exec(component_generated.content, mymodule.__dict__)
         sys.modules[component_generated.module_name] = mymodule
@@ -227,21 +234,21 @@ class YCappuccinoComponentLoaderImpl(YCappuccinoComponentLoader):
         """
 
         for component_discovered in await self.component_repository.list():
-            self.list_bundles.append(self.load_discovered(component_discovered))
-            generate_component = self.generate(component_discovered)
-            self.list_bundles.append(self.load_generated(generate_component))
+            self.list_bundles.append(await self.load_discovered(component_discovered))
+            generate_component = await self.generate(component_discovered)
+            self.list_bundles.append(await self.load_generated(generate_component))
 
         return self.list_bundles
 
     @staticmethod
-    def get_requires_from_ycappuccino_component(
+    async def get_requires_from_ycappuccino_component(
         component: type,
     ) -> dict[str, list[list]]:
         sign = inspect.signature(component.__init__)  # type: ignore
         binds: list[list] = []
         requires: list[list] = []
 
-        if framework.is_ycappuccino_component_bind(component):
+        if framework.is_ycappuccino_component(component):
             # manage type of bind to generate bind method
             sign_bind = inspect.signature(component.bind)  # type: ignore
             for key, item in sign_bind.parameters.items():
@@ -314,7 +321,7 @@ class YCappuccinoComponentLoaderImpl(YCappuccinoComponentLoader):
         }
 
     @staticmethod
-    def get_dumps(
+    async def get_dumps(
         kind: str, dec_tuple: list[list], parameter_dump: list[str]
     ) -> list[str]:
         if dec_tuple is None:
@@ -337,7 +344,7 @@ class YCappuccinoComponentLoaderImpl(YCappuccinoComponentLoader):
         return properties_dump
 
     @staticmethod
-    def get_bind_dumps(dec_tuple: list[list]) -> list[str]:
+    async def get_bind_dumps(dec_tuple: list[list]) -> list[str]:
         if dec_tuple is None:
             return []
         properties_dump: list[str] = []
