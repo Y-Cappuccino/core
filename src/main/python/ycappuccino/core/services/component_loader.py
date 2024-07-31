@@ -2,6 +2,7 @@
 # class that allow to generate from ycapuccino components pelix components in order to be loaded by the pelix framework
 #
 import abc
+import sys
 import typing as t
 import re
 from datetime import datetime
@@ -13,7 +14,7 @@ from ycappuccino.core.api import (
     GeneratedComponent,
     IComponentDiscovery,
 )
-from ycappuccino.core.framework import framework, BundleContext
+from ycappuccino.core import framework
 from pelix.ipopo.decorators import (
     ComponentFactory,
     Requires,
@@ -23,20 +24,29 @@ from pelix.ipopo.decorators import (
     Invalidate,
 )
 
+from ycappuccino.core.repositories.component_repositories import IComponentRepository
+from pelix.framework import Bundle, BundleContext
+
 
 class YCappuccinoComponentLoader(abc.ABC):
 
     @abc.abstractmethod
     def generate(self, component_discovered: ComponentDiscovered) -> ModuleType: ...
+
     @abc.abstractmethod
-    def load(self, component_discovered: ComponentDiscovered) -> ModuleType: ...
+    def load_discovered(
+        self, component_discovered: ComponentDiscovered
+    ) -> ModuleType: ...
+    @abc.abstractmethod
+    def load_generated(self, component_generated: GeneratedComponent) -> ModuleType: ...
+
     @abc.abstractmethod
     def loads(self) -> ModuleType: ...
 
 
 @ComponentFactory("FileComponentDiscovery-Factory")
 @Provides(specifications=[IYCappuccinoComponentLoader.__name__])
-@Requires("_component_discovery", IComponentDiscovery.__name__)
+@Requires("component_discovery", IComponentDiscovery.__name__)
 @Instantiate("FileComponentDiscovery")
 class YCappuccinoComponentLoaderImpl(YCappuccinoComponentLoader):
     """
@@ -44,8 +54,13 @@ class YCappuccinoComponentLoaderImpl(YCappuccinoComponentLoader):
     """
 
     def __init__(self):
-        self.generated_components = {}
-        self.context = None
+        self.generated_components: t.Dict[str, GeneratedComponent] = {}
+        self.context: BundleContext = None
+        self.component_discovery: IComponentDiscovery = None
+        self.component_repository: IComponentRepository = (
+            framework.get_framework().component_repository
+        )
+        self.list_bundles: t.List[Bundle] = []
 
     @Validate
     def validate(self, a_context: BundleContext) -> None:
@@ -190,14 +205,33 @@ class YCappuccinoComponentLoaderImpl(YCappuccinoComponentLoader):
                               self._context = None
                       """
 
-    def load(self, component_discovered: ComponentDiscovered) -> ModuleType:
-        pass
+    def load_discovered(self, component_discovered: ComponentDiscovered) -> Bundle:
+        bundle = self.context.install_bundle(
+            component_discovered.module_name, component_discovered.path
+        )
+        bundle.start()
+        return bundle
 
-    def loads(self) -> ModuleType:
+    def load_generated(self, component_generated: GeneratedComponent) -> Bundle:
+        mymodule = ModuleType(component_generated.module_name)
+        exec(component_generated.content, mymodule.__dict__)
+        sys.modules[component_generated.module_name] = mymodule
+
+        bundle = self.context.install_bundle(component_generated.module_name)
+        bundle.start()
+        return bundle
+
+    async def loads(self) -> t.List[Bundle]:
         """
         load all component discovered
         """
-        pass
+
+        for component_discovered in await self.component_repository.list():
+            self.list_bundles.append(self.load_discovered(component_discovered))
+            generate_component = self.generate(component_discovered)
+            self.list_bundles.append(self.load_generated(generate_component))
+
+        return self.list_bundles
 
     @staticmethod
     def get_requires_from_ycappuccino_component(

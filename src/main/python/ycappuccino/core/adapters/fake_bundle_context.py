@@ -27,5 +27,5 @@ class FakeBundleContext(BundleContext):
     def __init__(self, *args, **kwargs):
         pass
 
-    def install_bundle(self, module_name: str, file: str) -> Bundle:
+    def install_bundle(self, module_name: str, file: str = None) -> Bundle:
         return FakeBundle(module_name, file)

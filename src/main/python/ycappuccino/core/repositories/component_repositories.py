@@ -9,6 +9,7 @@ class IComponentRepository:
     async def upsert(self, component: ComponentDiscovered) -> None: ...
     async def delete(self, module_name) -> ComponentDiscovered: ...
     async def clear(self) -> None: ...
+    async def list(self) -> t.List[ComponentDiscovered]: ...
 
 
 class YComponentRepository(abc.ABC, IComponentRepository):
@@ -21,6 +22,8 @@ class YComponentRepository(abc.ABC, IComponentRepository):
     async def delete(self, module_name) -> ComponentDiscovered: ...
     @abc.abstractmethod
     async def clear(self) -> None: ...
+    @abc.abstractmethod
+    async def list(self) -> t.List[ComponentDiscovered]: ...
 
 
 class InMemoryYComponentRepository(YComponentRepository):
@@ -47,6 +50,8 @@ class InMemoryYComponentRepository(YComponentRepository):
         del self.components[module_name]
         return comp
 
-    async def get_all(self) -> Iterator[ComponentDiscovered]:
+    async def list(self) -> t.List[ComponentDiscovered]:
+        result = []
         for component in self.components.values():
-            yield component
+            result.append(component)
+        return result
