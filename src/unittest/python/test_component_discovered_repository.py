@@ -2,7 +2,7 @@ import sys
 
 import pytest
 
-from ycappuccino.core.adapters.component_discovery import ComponentDiscovered
+from ycappuccino.core.services.component_discovery import ComponentDiscovered
 from ycappuccino.core.repositories.component_repositories import (
     InMemoryYComponentRepository,
 )

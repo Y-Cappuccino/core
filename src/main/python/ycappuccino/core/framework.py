@@ -52,7 +52,7 @@ def get_ycappuccino_component(module: ModuleType) -> list[type]:
     ]
     # get  class is YCappuccinoComponent
     list_ycappuccino_component: list[type] = [
-        klass for klass in list_klass if framework.is_ycappuccino_component(klass)
+        klass for klass in list_klass if is_ycappuccino_component(klass)
     ]
     return list_ycappuccino_component
 

@@ -101,6 +101,9 @@ class FileComponentDiscovery(ComponentDiscovery):
                                 module=module,
                                 path=file,
                                 module_name=w_module_name,
+                                ycappuccino_classes=framework.get_ycappuccino_component(
+                                    module
+                                ),
                             )
                         )
                     else:

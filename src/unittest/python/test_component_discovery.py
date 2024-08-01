@@ -2,8 +2,7 @@ import os
 
 import pytest
 
-from ycappuccino.api.core import YCappuccino
-from ycappuccino.core.adapters.component_discovery import FileComponentDiscovery
+from ycappuccino.core.services.component_discovery import FileComponentDiscovery
 from ycappuccino.core.adapters.fake_bundle_context import (
     FakeBundleContext,
     FakeModuleType,
@@ -31,16 +30,19 @@ class TestComponentDiscovery(object):
                     module_name="list_components",
                     module=FakeModuleType("list_components"),
                     path=os.getcwd() + "/test_component_discovery/list_components.py",
+                    ycappuccino_classes=[],
                 ),
                 ComponentDiscovered(
                     module_name="activity_logger",
                     module=FakeModuleType("activity_logger"),
                     path=os.getcwd() + "/test_component_discovery/activity_logger.py",
+                    ycappuccino_classes=[],
                 ),
                 ComponentDiscovered(
                     module_name="configuration",
                     module=FakeModuleType("configuration"),
                     path=os.getcwd() + "/test_component_discovery/configuration.py",
+                    ycappuccino_classes=[],
                 ),
             ]
         ],
@@ -63,4 +65,8 @@ class TestComponentDiscovery(object):
             )
             assert component_discovered.path == component_assert.path.replace(
                 os.sep, "/"
+            )
+            assert (
+                component_discovered.ycappuccino_classes
+                == component_assert.ycappuccino_classes
             )

@@ -9,6 +9,7 @@ class ComponentDiscovered:
     module: ModuleType
     module_name: str
     path: t.Optional[str] = None
+    ycappuccino_classes: t.Optional[t.List[type]] = None
 
 
 @dataclasses.dataclass

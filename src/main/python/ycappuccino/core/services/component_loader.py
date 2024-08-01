@@ -8,7 +8,7 @@ import re
 from datetime import datetime
 from types import ModuleType
 
-from ycappuccino.core.adapters.component_discovery import ComponentDiscovered
+from ycappuccino.core.services.component_discovery import ComponentDiscovered
 from ycappuccino.core.api import (
     IYCappuccinoComponentLoader,
     GeneratedComponent,
@@ -83,12 +83,15 @@ class FileComponentLoader(ComponentLoader):
         path = component_discovered.path
         pelix_module_father = ".".join(module_name.split(".")[:-1])
 
-        pelix_module_name = (
-            pelix_module_father + "." + module_name.split(".")[-1] + "_pelix"
-        )
+        if pelix_module_father == "":
+            pelix_module_name = module_name.split(".")[-1] + "_pelix"
+        else:
+            pelix_module_name = (
+                pelix_module_father + "." + module_name.split(".")[-1] + "_pelix"
+            )
 
         # get  class is YCappuccinoComponent
-        list_ycappuccino_component = framework.get_ycappuccino_component(module)
+        list_ycappuccino_component = component_discovered.ycappuccino_classes
         with open(path, "r") as f:
             content_original_file = f.readlines()
 

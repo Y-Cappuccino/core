@@ -1,7 +1,6 @@
 import abc
-from typing import Iterator
 import typing as t
-from ycappuccino.core.adapters.component_discovery import ComponentDiscovered
+from ycappuccino.core.services.component_discovery import ComponentDiscovered
 
 
 class IComponentRepository:
