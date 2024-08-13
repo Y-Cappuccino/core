@@ -24,19 +24,19 @@ class TestComponentDiscovery(object):
                 module_name="list_components",
                 module=FakeModuleType("list_components"),
                 path=os.getcwd() + "/test_component_discovery/list_components.py",
-                ycappuccino_classes=[],
+                ycappuccino_classes=[],  # TODO
             ),
             ComponentDiscovered(
                 module_name="activity_logger",
                 module=FakeModuleType("activity_logger"),
                 path=os.getcwd() + "/test_component_discovery/activity_logger.py",
-                ycappuccino_classes=[],
+                ycappuccino_classes=[],  # TODO
             ),
             ComponentDiscovered(
                 module_name="configuration",
                 module=FakeModuleType("configuration"),
                 path=os.getcwd() + "/test_component_discovery/configuration.py",
-                ycappuccino_classes=[],
+                ycappuccino_classes=[],  # TODO
             ),
         ]
         self.component_loader: FileComponentLoader = FileComponentLoader()
@@ -70,7 +70,7 @@ class TestComponentDiscovery(object):
     )
     async def test_given_discovered_component_when_generate_then_generated_module_done(
         self,
-        generate_components,
+        generate_components: GeneratedComponent,
     ):
         # Given
         # When
