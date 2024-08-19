@@ -1,21 +1,24 @@
 import abc
 import asyncio
-import dataclasses
 import glob
-import inspect
 import os
 
 import typing as t
 
 from pelix.ipopo.decorators import (
     ComponentFactory,
+    Requires,
     Validate,
     Provides,
     Instantiate,
     Invalidate,
 )
 from pelix.framework import BundleContext
-from ycappuccino.core.api import IComponentDiscovery, ComponentDiscovered
+from ycappuccino.core.api import (
+    IComponentDiscovery,
+    ComponentDiscovered,
+    IInspectModule,
+)
 from ycappuccino.core import framework
 
 
@@ -29,6 +32,7 @@ class ComponentDiscovery(abc.ABC, IComponentDiscovery):
 
 @ComponentFactory("FileComponentDiscovery-Factory")
 @Provides(specifications=[IComponentDiscovery.__name__])
+@Requires("_inspect_module", IInspectModule.__name__)
 @Instantiate("FileComponentDiscovery")
 class FileComponentDiscovery(ComponentDiscovery):
     """
@@ -38,6 +42,7 @@ class FileComponentDiscovery(ComponentDiscovery):
     def __init__(self):
         self.path: t.Optional[str] = None
         self.context: t.Optional[BundleContext] = None
+        self._inspect_module: t.Optional[IInspectModule] = None
 
     @Validate
     def validate(self, a_context: BundleContext) -> None:
@@ -101,7 +106,7 @@ class FileComponentDiscovery(ComponentDiscovery):
                                 module=module,
                                 path=file,
                                 module_name=w_module_name,
-                                ycappuccino_classes=framework.get_ycappuccino_component(
+                                ycappuccino_classes=self._inspect_module.get_ycappuccino_component(
                                     module
                                 ),
                             )

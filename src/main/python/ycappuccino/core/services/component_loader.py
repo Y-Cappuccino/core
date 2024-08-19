@@ -10,6 +10,7 @@ from types import ModuleType
 
 from ycappuccino.core.services.component_discovery import ComponentDiscovered
 from ycappuccino.core.api import (
+    IInspectModule,
     IYCappuccinoComponentLoader,
     GeneratedComponent,
     IComponentDiscovery,
@@ -50,6 +51,7 @@ class ComponentLoader(abc.ABC):
 @ComponentFactory("FileComponentLoader-Factory")
 @Provides(specifications=[IYCappuccinoComponentLoader.__name__])
 @Requires("_component_discovery", IComponentDiscovery.__name__)
+@Requires("_inspect_modulo", IInspectModule.__name__)
 @Instantiate("FileComponentLoader")
 class FileComponentLoader(ComponentLoader):
     """
@@ -64,6 +66,7 @@ class FileComponentLoader(ComponentLoader):
             framework.get_framework().component_repository
         )
         self.list_bundles: t.List[Bundle] = []
+        self._inspect_module: IInspectModule = None
 
     @Validate
     def validate(self, a_context: BundleContext) -> None:
@@ -117,7 +120,9 @@ class FileComponentLoader(ComponentLoader):
         module: ModuleType,
     ) -> str:
 
-        props = self.get_requires_from_ycappuccino_component(ycappuccino_component)
+        props = self.get_requires_from_ycappuccino_component(
+            ycappuccino_component, self._inspect_module
+        )
 
         factory: str = ycappuccino_component.__name__ + "Factory"
         provides: str = '","'.join(
@@ -245,13 +250,13 @@ class FileComponentLoader(ComponentLoader):
 
     @staticmethod
     async def get_requires_from_ycappuccino_component(
-        component: type,
+        component: type, inspect_modulo: IInspectModule
     ) -> dict[str, list[list]]:
         sign = inspect.signature(component.__init__)  # type: ignore
         binds: list[list] = []
         requires: list[list] = []
 
-        if framework.is_ycappuccino_component(component):
+        if inspect_modulo.is_ycappuccino_component(component):
             # manage type of bind to generate bind method
             sign_bind = inspect.signature(component.bind)  # type: ignore
             for key, item in sign_bind.parameters.items():
@@ -299,7 +304,7 @@ class FileComponentLoader(ComponentLoader):
                     spec_filter = item.annotation.spec_filter
                     _type = item.annotation.type.__name__
                     is_require = True
-                elif framework.is_ycappuccino_component(item.annotation, True):
+                elif inspect_modulo.is_ycappuccino_component(item.annotation, True):
                     _type = item.annotation.__name__
                     is_require = True
 

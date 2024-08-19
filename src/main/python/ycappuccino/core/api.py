@@ -30,3 +30,12 @@ class IComponentDiscovery:
         self, path: str, module_name: t.Optional[str] = None
     ) -> t.AsyncIterator[ComponentDiscovered]:
         pass
+
+
+class IInspectModule:
+
+    def get_ycappuccino_component(self, module: ModuleType) -> list[type]: ...
+
+    def is_ycappuccino_component(
+        self, a_klass: type, include_pelix: bool = False
+    ) -> bool: ...

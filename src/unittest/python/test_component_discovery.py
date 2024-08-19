@@ -2,6 +2,7 @@ import os
 
 import pytest
 
+from ycappuccino.core.adapters.inspect_module import FakeInspectModuleType
 from ycappuccino.core.services.component_discovery import FileComponentDiscovery
 from ycappuccino.core.adapters.fake_bundle_context import (
     FakeBundleContext,
@@ -19,6 +20,13 @@ class TestComponentDiscovery(object):
         self.discovery = FileComponentDiscovery()
         self.discovery.path = os.getcwd() + "/test_component_discovery"
         self.discovery.context = FakeBundleContext()
+        self.discovery._inspect_module = FakeInspectModuleType(
+            {
+                "list_components": [],
+                "activity_logger": [],
+                "configuration": [],
+            }
+        )
         self.framework = framework.get_framework()
         self.framework.bundle_prefix = ["ycappuccino"]
 

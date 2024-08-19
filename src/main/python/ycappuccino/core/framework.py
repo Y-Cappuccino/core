@@ -25,38 +25,6 @@ def get_framework():
     return framework
 
 
-def is_ycappuccino_component(a_klass: type, include_pelix: bool = False) -> bool:
-    first = True
-    for supertype in a_klass.__mro__:
-        if supertype is not inspect._empty:
-            if supertype.__name__ == YCappuccinoComponent.__name__:
-                if first:
-                    return False
-                else:
-                    return True
-            elif include_pelix and a_klass is not inspect._empty:
-                list_subclass = supertype.__subclasses__()
-                for subclass in list_subclass:
-                    if hasattr(subclass, "_ipopo_property_getter"):
-                        return True
-
-        first = False
-    return False
-
-
-def get_ycappuccino_component(module: ModuleType) -> list[type]:
-    list_klass: list[type] = [
-        klass
-        for name, klass in inspect.getmembers(module, inspect.isclass)
-        if inspect.isclass(klass)
-    ]
-    # get  class is YCappuccinoComponent
-    list_ycappuccino_component: list[type] = [
-        klass for klass in list_klass if is_ycappuccino_component(klass)
-    ]
-    return list_ycappuccino_component
-
-
 class Framework(abc.ABC, IFramework):
 
     def __init__(self):

@@ -7,6 +7,7 @@ from ycappuccino.core.adapters.fake_bundle_context import (
     FakeModuleType,
 )
 from ycappuccino.core import framework
+from ycappuccino.core.adapters.inspect_module import FakeInspectModuleType
 from ycappuccino.core.api import ComponentDiscovered, GeneratedComponent
 
 import typing as t
@@ -41,6 +42,7 @@ class TestComponentDiscovery(object):
         ]
         self.component_loader: FileComponentLoader = FileComponentLoader()
         self.bundle_context = FakeBundleContext()
+        self.component_loader._inspect_module = FakeInspectModuleType()
 
         self.component_loader.context = self.bundle_context
 

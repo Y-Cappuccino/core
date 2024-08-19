@@ -2,34 +2,16 @@ import abc
 import inspect
 from types import ModuleType
 
+from pelix.ipopo.decorators import ComponentFactory, Instantiate, Provides
+
 from ycappuccino.api.core import YCappuccinoComponent
+from ycappuccino.core.api import IInspectModule
 
 
-class InspectModule(abc.ABC):
+class InspectModule(abc.ABC, IInspectModule):
     @abc.abstractmethod
     def get_ycappuccino_component(self, module: ModuleType) -> list[type]:
         pass
-
-    @abc.abstractmethod
-    def is_ycappuccino_component(
-        self, a_klass: type, include_pelix: bool = False
-    ) -> bool:
-        pass
-
-
-class InspectModuleType(InspectModule):
-
-    def get_ycappuccino_component(self, module: ModuleType) -> list[type]:
-        list_klass: list[type] = [
-            klass
-            for name, klass in inspect.getmembers(module, inspect.isclass)
-            if inspect.isclass(klass)
-        ]
-        # get  class is YCappuccinoComponent
-        list_ycappuccino_component: list[type] = [
-            klass for klass in list_klass if self.is_ycappuccino_component(klass)
-        ]
-        return list_ycappuccino_component
 
     def is_ycappuccino_component(
         self, a_klass: type, include_pelix: bool = False
@@ -50,3 +32,33 @@ class InspectModuleType(InspectModule):
 
             first = False
         return False
+
+
+import typing as t
+
+
+class FakeInspectModuleType(InspectModule):
+
+    def __init__(self, ycappuccino_by_device: t.Dict[str, t.List[type]]):
+        self.ycappuccino_by_device = ycappuccino_by_device
+
+    def get_ycappuccino_component(self, module: ModuleType) -> list[type]:
+        return self.ycappuccino_by_device.get(module.__name__, [])
+
+
+@ComponentFactory("InspectModule-Factory")
+@Provides(specifications=[IInspectModule.__name__])
+@Instantiate("InspectModule")
+class InspectModuleType(InspectModule):
+
+    def get_ycappuccino_component(self, module: ModuleType) -> list[type]:
+        list_klass: list[type] = [
+            klass
+            for name, klass in inspect.getmembers(module, inspect.isclass)
+            if inspect.isclass(klass)
+        ]
+        # get  class is YCappuccinoComponent
+        list_ycappuccino_component: list[type] = [
+            klass for klass in list_klass if self.is_ycappuccino_component(klass)
+        ]
+        return list_ycappuccino_component
