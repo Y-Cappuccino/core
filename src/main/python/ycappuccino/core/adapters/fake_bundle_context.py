@@ -1,4 +1,4 @@
-import sys
+import importlib.util
 from types import ModuleType
 from pelix.framework import BundleContext, Bundle
 
@@ -14,12 +14,15 @@ class FakeBundle(Bundle):
     def __init__(self, module_name: str, file: str):
         self.module_name = module_name
         self.file = file
+        self.module_type = None
 
     def start(self):
-        pass
+        spec = importlib.util.spec_from_file_location(self.module_name, self.file)
+        self.module_type = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.module_type)
 
     def get_module(self) -> ModuleType:
-        return FakeModuleType(self.module_name)
+        return self.module_type
 
 
 class FakeBundleContext(BundleContext):

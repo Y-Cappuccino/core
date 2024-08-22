@@ -2,7 +2,10 @@ import os
 
 import pytest
 
-from ycappuccino.core.adapters.inspect_module import FakeInspectModuleType
+from ycappuccino.core.adapters.inspect_module import (
+    FakeInspectModuleType,
+    InspectModuleType,
+)
 from ycappuccino.core.services.component_discovery import FileComponentDiscovery
 from ycappuccino.core.adapters.fake_bundle_context import (
     FakeBundleContext,
@@ -18,15 +21,11 @@ class TestComponentDiscovery(object):
     @pytest.fixture(autouse=True)
     def setup(self):
         self.discovery = FileComponentDiscovery()
-        self.discovery.path = os.getcwd() + "/test_component_discovery"
-        self.discovery.context = FakeBundleContext()
-        self.discovery._inspect_module = FakeInspectModuleType(
-            {
-                "list_components": [],
-                "activity_logger": [],
-                "configuration": [],
-            }
+        self.discovery.path = (
+            os.getcwd() + "../../main/python/ycappuccino/core/service/base"
         )
+        self.discovery.context = FakeBundleContext()
+        self.discovery._inspect_module = InspectModuleType()
         self.framework = framework.get_framework()
         self.framework.bundle_prefix = ["ycappuccino"]
 
@@ -37,19 +36,19 @@ class TestComponentDiscovery(object):
                 ComponentDiscovered(
                     module_name="list_components",
                     module=FakeModuleType("list_components"),
-                    path=os.getcwd() + "/test_component_discovery/list_components.py",
+                    path=os.getcwd() + "/list_components.py",
                     ycappuccino_classes=[],
                 ),
                 ComponentDiscovered(
                     module_name="activity_logger",
                     module=FakeModuleType("activity_logger"),
-                    path=os.getcwd() + "/test_component_discovery/activity_logger.py",
+                    path=os.getcwd() + "/activity_logger.py",
                     ycappuccino_classes=[],
                 ),
                 ComponentDiscovered(
                     module_name="configuration",
                     module=FakeModuleType("configuration"),
-                    path=os.getcwd() + "/test_component_discovery/configuration.py",
+                    path=os.getcwd() + "/configuration.py",
                     ycappuccino_classes=[],
                 ),
             ]

@@ -5,6 +5,8 @@ import logging
 
 import shutil
 
+from ycappuccino.api.base import IConfiguration
+
 FILE_NAME = {"key": "file_name", "default": "config.properties"}
 
 
@@ -13,10 +15,6 @@ component that provide a configuration component and store config in a propertie
 
 @author: apisu
 """
-
-
-class IConfiguration:
-    pass
 
 
 class Configuration(IConfiguration):
