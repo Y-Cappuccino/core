@@ -17,7 +17,7 @@ class InspectModule(abc.ABC, IInspectModule):
         self, a_klass: type, include_pelix: bool = False
     ) -> bool:
         first = True
-        for supertype in a_klass.__mro__:
+        for supertype in inspect.getmro(a_klass):
             if supertype is not inspect._empty:
                 if supertype.__name__ == YCappuccinoComponent.__name__:
                     if first:

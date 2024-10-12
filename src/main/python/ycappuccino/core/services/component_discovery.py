@@ -4,7 +4,6 @@ import glob
 import os
 
 import typing as t
-
 from pelix.ipopo.decorators import (
     ComponentFactory,
     Requires,
@@ -25,9 +24,7 @@ from ycappuccino.core import framework
 class ComponentDiscovery(abc.ABC, IComponentDiscovery):
 
     @abc.abstractmethod
-    def discover(
-        self, path: str, module_name: t.Optional[str] = None
-    ) -> t.AsyncIterator[ComponentDiscovered]: ...
+    def discover(self, path: str) -> None: ...
 
 
 @ComponentFactory("FileComponentDiscovery-Factory")
@@ -58,7 +55,18 @@ class FileComponentDiscovery(ComponentDiscovery):
     def in_validate(self, a_context: BundleContext) -> None:
         self.context = None
 
-    async def discover(self, path: str, module_name: t.Optional[str] = "") -> None:
+    async def discover(self, path: str) -> None:
+        """
+        discover component in path
+        :param path:
+        :return:
+        """
+        await self._discover(path)
+        for comp in framework.get_framework().component_repository.components.values():
+            for klass in self._inspect_module.get_ycappuccino_component(comp.module):
+                await framework.get_framework().component_repository.add_type(klass)
+
+    async def _discover(self, path: str, module_name: t.Optional[str] = "") -> None:
         """
         discover component in path
         :param path:
@@ -85,7 +93,7 @@ class FileComponentDiscovery(ComponentDiscovery):
 
                         else:
                             w_module_name = module_name + "." + file.split("/")[-1]
-                        await self.discover(
+                        await self._discover(
                             file,
                             w_module_name,
                         )
@@ -106,13 +114,11 @@ class FileComponentDiscovery(ComponentDiscovery):
                                 module=module,
                                 path=file,
                                 module_name=w_module_name,
-                                ycappuccino_classes=self._inspect_module.get_ycappuccino_component(
-                                    module
-                                ),
                             )
                         )
+
                     else:
-                        await self.discover(
+                        await self._discover(
                             file,
                             w_module_name,
                         )

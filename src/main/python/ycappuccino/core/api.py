@@ -9,7 +9,6 @@ class ComponentDiscovered:
     module: ModuleType
     module_name: str
     path: t.Optional[str] = None
-    ycappuccino_classes: t.Optional[t.List[type]] = None
 
 
 @dataclasses.dataclass
@@ -26,10 +25,7 @@ class IYCappuccinoComponentLoader:
 
 class IComponentDiscovery:
 
-    def discover(
-        self, path: str, module_name: t.Optional[str] = None
-    ) -> t.AsyncIterator[ComponentDiscovered]:
-        pass
+    def discover(self, path: str) -> None: ...
 
 
 class IInspectModule:

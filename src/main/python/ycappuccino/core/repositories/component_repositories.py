@@ -1,5 +1,6 @@
 import abc
 import typing as t
+
 from ycappuccino.core.services.component_discovery import ComponentDiscovered
 
 
@@ -32,6 +33,20 @@ class InMemoryYComponentRepository(YComponentRepository):
 
     def __init__(self):
         self.components: t.Dict[str, ComponentDiscovered] = {}
+        self.ycappuccino_classes: t.Dict[str, type] = {}
+
+    async def add_type(self, a_klass: type):
+        if (
+            a_klass is not None
+            and len(a_klass.__subclasses__()) == 0
+            and a_klass not in self.ycappuccino_classes
+        ):
+            self.ycappuccino_classes[a_klass.get_hash()] = a_klass
+        elif (
+            len(a_klass.__subclasses__()) == 0
+            and a_klass.get_hash() in self.ycappuccino_classes
+        ):
+            del self.ycappuccino_classes[a_klass.get_hash()]
 
     async def get(self, module_name: str) -> ComponentDiscovered:
         if module_name not in self.components:
