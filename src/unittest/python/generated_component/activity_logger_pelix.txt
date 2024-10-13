@@ -5,7 +5,7 @@ from activity_logger import ActivityLogger
 
 
 @ComponentFactory("ActivityLoggerFactory")
-@Provides(specifications=["ListComponent","ActivityLogger","Configuration"])
+@Provides(specifications=["ActivityLogger"])
 @Requires("config", "IConfiguration", optional=False,aggregate=False, spec_filter="")
 @Property("name","name","main")
 @Instantiate("{0}")

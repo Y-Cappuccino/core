@@ -5,7 +5,7 @@ from configuration import Configuration
 
 
 @ComponentFactory("ConfigurationFactory")
-@Provides(specifications=["ListComponent","ActivityLogger","Configuration"])
+@Provides(specifications=["Configuration"])
 
 @Property("file_name","file_name","config.properties")
 @Instantiate("{0}")

@@ -5,7 +5,7 @@ from list_components import ListComponent
 
 
 @ComponentFactory("ListComponentFactory")
-@Provides(specifications=["ListComponent","ActivityLogger","Configuration"])
+@Provides(specifications=["ListComponent"])
 @Requires("ycappuccinoremote", "YCappuccinoRemote", optional=True,aggregate=True, spec_filter="")
 @Requires("logger", "IActivityLogger", optional=False,aggregate=False, spec_filter="(name=main)")
 

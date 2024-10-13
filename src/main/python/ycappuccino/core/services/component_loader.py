@@ -113,7 +113,7 @@ class FileComponentLoader(ComponentLoader):
             if list_matches is not None and len(list_matches) > 0:
                 content_next, instance_name = await self.generate_component(
                     ycappuccino_component,
-                    list(list_ycappuccino_component.values()),
+                    [ycappuccino_component],
                     module,
                 )
                 content = content + content_next
