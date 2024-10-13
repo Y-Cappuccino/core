@@ -39,11 +39,16 @@ import typing as t
 
 class FakeInspectModuleType(InspectModule):
 
-    def __init__(self, ycappuccino_by_device: t.Dict[str, t.List[type]]):
-        self.ycappuccino_by_device = ycappuccino_by_device
+    def __init__(self, ycappuccino_by_module: t.Dict[str, t.List[type]]):
+        self.ycappuccino_by_module = ycappuccino_by_module
 
     def get_ycappuccino_component(self, module: ModuleType) -> list[type]:
-        return self.ycappuccino_by_device.get(module.__name__, [])
+        return self.ycappuccino_by_module.get(module.__name__, [])
+
+    def add_ycappuccino_component(self, module_name: str, klass: type):
+        if module_name not in self.ycappuccino_by_module:
+            self.ycappuccino_by_module[module_name] = []
+        self.ycappuccino_by_module[module_name].append(klass)
 
 
 @ComponentFactory("InspectModule-Factory")
