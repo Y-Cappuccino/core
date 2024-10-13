@@ -14,6 +14,8 @@ class ComponentDiscovered:
 @dataclasses.dataclass
 class GeneratedComponent:
     module_name: str
+    instance_name: str
+    instance_name_obj: str
     content: str
 
 

@@ -9,7 +9,7 @@ from list_components import ListComponent
 @Requires("ycappuccinoremote", "YCappuccinoRemote", optional=True,aggregate=True, spec_filter="")
 @Requires("logger", "IActivityLogger", optional=False,aggregate=False, spec_filter="(name=main)")
 
-@Instantiate("ListComponentFactory_1728812266.451981")
+@Instantiate("{0}")
 class ListComponentFactoryIpopo(Proxy):
 
     def __int__(self):
@@ -19,19 +19,19 @@ class ListComponentFactoryIpopo(Proxy):
         self.logger = None
 
 
-        @BindField("ycappuccinoremote")
-        def bind_ycappuccinoremote(self, field, service, service_ref):
-            asyncio.run(self._obj.bind(service))
+    @BindField("ycappuccinoremote")
+    def bind_ycappuccinoremote(self, field, service, service_ref):
+        asyncio.run(self._obj.bind(service))
 
-        @UnbindField("ycappuccinoremote")
-        def un_bind_ycappuccinoremote(self, field, service, service_ref):
-            asyncio.run(self._obj.un_bind(service))
+    @UnbindField("ycappuccinoremote")
+    def un_bind_ycappuccinoremote(self, field, service, service_ref):
+        asyncio.run(self._obj.un_bind(service))
 
 
 
     @Validate
     def validate(self, context):
-      self._objname = "ListComponentFactory_1728812266.451981"
+      self._objname = "{1}"
       self._obj = ListComponent(None if self.logger is None else  self.logger[0]._obj if  isinstance(self.logger,list) else self.logger._obj)
       self._obj._ipopo = self
       self._context = context

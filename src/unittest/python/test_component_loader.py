@@ -74,43 +74,61 @@ class TestComponentDiscovery(object):
         return content
 
     @pytest.mark.parametrize(
-        "generate_components",
+        "expected_components",
         [
             [
                 GeneratedComponent(
                     module_name="list_components_pelix",
                     content=read_generated_file("list_components_pelix"),
+                    instance_name="",
+                    instance_name_obj="",
                 ),
                 GeneratedComponent(
                     module_name="activity_logger_pelix",
                     content=read_generated_file("activity_logger_pelix"),
+                    instance_name="",
+                    instance_name_obj="",
                 ),
                 GeneratedComponent(
                     module_name="configuration_pelix",
                     content=read_generated_file("configuration_pelix"),
+                    instance_name="",
+                    instance_name_obj="",
                 ),
             ]
         ],
     )
     async def test_given_discovered_component_when_generate_then_generated_module_done(
         self,
-        generate_components: GeneratedComponent,
+        expected_components: t.List[GeneratedComponent],
     ):
         # Given
         # When
-        generate_component = await self.component_loader.generate(
+        generate_components = await self.component_loader.generate(
             self.discovered_components[0]
         )
-        assert generate_component.module_name == generate_components[0].module_name
-        assert generate_component.content == generate_components[0].content
-        generate_component = await self.component_loader.generate(
+        generate_component = generate_components[0]
+        assert generate_component.module_name == expected_components[0].module_name
+        assert generate_component.content == expected_components[0].content.format(
+            generate_component.instance_name, generate_component.instance_name_obj
+        )
+
+        generate_components = await self.component_loader.generate(
             self.discovered_components[1]
         )
-        assert generate_component.module_name == generate_components[0].module_name
-        assert generate_component.content == generate_components[0].content
-        generate_component = await self.component_loader.generate(
+        generate_component = generate_components[0]
+
+        assert generate_component.module_name == expected_components[1].module_name
+        assert generate_component.content == expected_components[1].content.format(
+            generate_component.instance_name, generate_component.instance_name_obj
+        )
+        generate_components = await self.component_loader.generate(
             self.discovered_components[2]
         )
-        assert generate_component.module_name == generate_components[0].module_name
-        assert generate_component.content == generate_components[0].content
+        generate_component = generate_components[0]
+
+        assert generate_component.module_name == expected_components[2].module_name
+        assert generate_component.content == expected_components[2].content.format(
+            generate_component.instance_name, generate_component.instance_name_obj
+        )
         # then
