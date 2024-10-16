@@ -18,3 +18,6 @@ default_task = "publish"
 def set_properties(project):
     project.set_property("core", False)  # default is True
     project.depends_on_requirements("requirements.txt")
+    project.depends_on(
+        "ycappuccino_api", url="git+https://github.com/Y-Cappuccino/api.git"
+    )
