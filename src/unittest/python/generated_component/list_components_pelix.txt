@@ -1,0 +1,45 @@
+from pelix.ipopo.decorators import  BindField, UnbindField,Instantiate, Requires, Provides, ComponentFactory, Property, Validate, Invalidate
+import asyncio
+from ycappuccino.api.proxy import Proxy
+from list_components import ListComponent
+
+
+@ComponentFactory("ListComponentFactory")
+@Provides(specifications=["ListComponent"])
+@Requires("ycappuccinoremote", "YCappuccinoRemote", optional=True,aggregate=True, spec_filter="")
+@Requires("logger", "IActivityLogger", optional=False,aggregate=False, spec_filter="(name=main)")
+
+@Instantiate("{0}")
+class ListComponentFactoryIpopo(Proxy):
+
+    def __int__(self):
+      super().__init__()
+      self._context = None
+      self.ycappuccinoremote = None
+        self.logger = None
+
+
+    @BindField("ycappuccinoremote")
+    def bind_ycappuccinoremote(self, field, service, service_ref):
+        asyncio.run(self._obj.bind(service))
+
+    @UnbindField("ycappuccinoremote")
+    def un_bind_ycappuccinoremote(self, field, service, service_ref):
+        asyncio.run(self._obj.un_bind(service))
+
+
+
+    @Validate
+    def validate(self, context):
+      self._objname = "{1}"
+      self._obj = ListComponent(None if self.logger is None else  self.logger[0]._obj if  isinstance(self.logger,list) else self.logger._obj)
+      self._obj._ipopo = self
+      self._context = context
+      asyncio.run(self._obj.start())
+
+    @Invalidate
+    def in_validate(self, context):
+      asyncio.run(self._obj.stop())
+      self._objname = None
+      self._obj = None
+      self._context = None

@@ -1,0 +1,35 @@
+from pelix.ipopo.decorators import  BindField, UnbindField,Instantiate, Requires, Provides, ComponentFactory, Property, Validate, Invalidate
+import asyncio
+from ycappuccino.api.proxy import Proxy
+from activity_logger import ActivityLogger
+
+
+@ComponentFactory("ActivityLoggerFactory")
+@Provides(specifications=["ActivityLogger"])
+@Requires("config", "IConfiguration", optional=False,aggregate=False, spec_filter="")
+@Property("name","name","main")
+@Instantiate("{0}")
+class ActivityLoggerFactoryIpopo(Proxy):
+
+    def __int__(self):
+      super().__init__()
+      self._context = None
+      self.name = None
+        self.config = None
+
+
+
+    @Validate
+    def validate(self, context):
+      self._objname = "{1}"
+      self._obj = ActivityLogger(None if self.config is None else  self.config[0]._obj if  isinstance(self.config,list) else self.config._obj,self.name)
+      self._obj._ipopo = self
+      self._context = context
+      asyncio.run(self._obj.start())
+
+    @Invalidate
+    def in_validate(self, context):
+      asyncio.run(self._obj.stop())
+      self._objname = None
+      self._obj = None
+      self._context = None

@@ -6,6 +6,7 @@ import sys
 import typing as t
 import re
 from datetime import datetime
+from pathlib import Path
 from types import ModuleType
 
 from ycappuccino.core.services.component_discovery import ComponentDiscovered
@@ -27,6 +28,7 @@ from pelix.ipopo.decorators import (
 
 from ycappuccino.core.repositories.component_repositories import IComponentRepository
 from pelix.framework import Bundle, BundleContext
+import inspect
 
 
 class ComponentLoader(abc.ABC):
@@ -34,6 +36,8 @@ class ComponentLoader(abc.ABC):
     def __init__(self):
         self._component_discovery = None
 
+    @abc.abstractmethod
+    def get_arg_new(self, all: list[list]) -> list[str]: ...
     @abc.abstractmethod
     def generate(self, component_discovered: ComponentDiscovered) -> ModuleType: ...
 
@@ -51,7 +55,7 @@ class ComponentLoader(abc.ABC):
 @ComponentFactory("FileComponentLoader-Factory")
 @Provides(specifications=[IYCappuccinoComponentLoader.__name__])
 @Requires("_component_discovery", IComponentDiscovery.__name__)
-@Requires("_inspect_modulo", IInspectModule.__name__)
+@Requires("_inspect_module", IInspectModule.__name__)
 @Instantiate("FileComponentLoader")
 class FileComponentLoader(ComponentLoader):
     """
@@ -79,8 +83,8 @@ class FileComponentLoader(ComponentLoader):
 
     async def generate(
         self, component_discovered: ComponentDiscovered
-    ) -> GeneratedComponent:
-
+    ) -> t.List[GeneratedComponent]:
+        res: t.List[GeneratedComponent] = []
         module_name = component_discovered.module_name
         module = component_discovered.module
         path = component_discovered.path
@@ -94,33 +98,54 @@ class FileComponentLoader(ComponentLoader):
             )
 
         # get  class is YCappuccinoComponent
-        list_ycappuccino_component = component_discovered.ycappuccino_classes
+        list_ycappuccino_component = self.component_repository.ycappuccino_classes
+        if not Path(path).exists():
+            raise FileNotFoundError(f"file {path} not found")
         with open(path, "r") as f:
             content_original_file = f.readlines()
 
         content = ""
-        for ycappuccino_component in list_ycappuccino_component:
+        for ycappuccino_component in list_ycappuccino_component.values():
             list_matches = re.findall(
                 f"class {ycappuccino_component.__name__}.*",
                 "\n".join(content_original_file),
             )
             if list_matches is not None and len(list_matches) > 0:
-                content = content + await self.generate_component(
+                content_next, instance_name = await self.generate_component(
                     ycappuccino_component,
-                    list_ycappuccino_component,
+                    [ycappuccino_component],
                     module,
                 )
+                content = content + content_next
+                res.append(
+                    GeneratedComponent(
+                        module_name=pelix_module_name,
+                        instance_name=instance_name,
+                        instance_name_obj=instance_name,
+                        content=content,
+                    )
+                )
+        return res
 
-        return GeneratedComponent(module_name=pelix_module_name, content=content)
+    def get_arg_new(self, all: list[list]) -> list[str]:
+        args_new: list[str] = []
+        for property in all:
+            if property[-1]:
+                prop = f"None if self.{property[0]} is None else  self.{property[0]}[0]._obj if  isinstance(self.{property[0]},list) else self.{property[0]}._obj"
+            else:
+                prop = f"self.{property[0]}"
+
+            args_new.append(prop)
+        return args_new
 
     async def generate_component(
         self,
         ycappuccino_component: type,
         list_ycappuccino_component: list[type],
         module: ModuleType,
-    ) -> str:
+    ) -> t.Tuple[str, str]:
 
-        props = self.get_requires_from_ycappuccino_component(
+        props = await self.get_requires_from_ycappuccino_component(
             ycappuccino_component, self._inspect_module
         )
 
@@ -149,7 +174,7 @@ class FileComponentLoader(ComponentLoader):
             dec_tuple=props.get("binds"),  # type: ignore
         )
 
-        return await self.get_pelix_module_str(
+        content, instance_name = await self.get_pelix_module_str(
             bind_methods=bind_methods,
             requires=requires,
             properties=properties,
@@ -160,6 +185,7 @@ class FileComponentLoader(ComponentLoader):
             module=module,
             args_new=args_new,
         )
+        return content, instance_name
 
     @staticmethod
     async def get_pelix_module_str(
@@ -172,7 +198,7 @@ class FileComponentLoader(ComponentLoader):
         provides: str,
         module: ModuleType,
         args_new: list[str],
-    ) -> str:
+    ) -> t.Tuple[str, str]:
         bind_methods_dump: str = "\n".join(bind_methods)
         requires_dump: str = "\n".join(requires)
         properties_dump: str = "\n".join(properties)
@@ -181,42 +207,44 @@ class FileComponentLoader(ComponentLoader):
         args_new_dump = ",".join(args_new)
         class_new: str = f"{ycappuccino_component.__name__}({args_new_dump})"
         klass: str = ycappuccino_component.__name__
-        return f"""\n
-                      from pelix.ipopo.decorators import  BindField, UnbindField,Instantiate, Requires, Provides, ComponentFactory, Property, Validate, Invalidate
-                      import asyncio
-                      from ycappuccino.api.proxy import Proxy
-                      from {module.__name__} import {klass}
+        return (
+            f"""from pelix.ipopo.decorators import  BindField, UnbindField,Instantiate, Requires, Provides, ComponentFactory, Property, Validate, Invalidate
+import asyncio
+from ycappuccino.api.proxy import Proxy
+from {module.__name__} import {klass}
 
 
-                      @ComponentFactory("{factory}")
-                      @Provides(specifications=["{provides}"])
-                      {requires_dump}
-                      {properties_dump}
-                      @Instantiate("{instance}")
-                      class {factory}Ipopo(Proxy):
+@ComponentFactory("{factory}")
+@Provides(specifications=["{provides}"])
+{requires_dump}
+{properties_dump}
+@Instantiate("{instance}")
+class {factory}Ipopo(Proxy):
 
-                          def __int__(self):
-                              super().__init__()
-                              self._context = None
-                              {parameter_dump}
+    def __int__(self):
+      super().__init__()
+      self._context = None
+      {parameter_dump}
 
-                          {bind_methods_dump}
+{bind_methods_dump}
 
-                          @Validate
-                          def validate(self, context):
-                              self._objname = "{instance}"
-                              self._obj = {class_new}
-                              self._obj._ipopo = self
-                              self._context = context
-                              asyncio.run(self._obj.start())
+    @Validate
+    def validate(self, context):
+      self._objname = "{instance}"
+      self._obj = {class_new}
+      self._obj._ipopo = self
+      self._context = context
+      asyncio.run(self._obj.start())
 
-                          @Invalidate
-                          def in_validate(self, context):
-                              asyncio.run(self._obj.stop())
-                              self._objname = None
-                              self._obj = None
-                              self._context = None
-                      """
+    @Invalidate
+    def in_validate(self, context):
+      asyncio.run(self._obj.stop())
+      self._objname = None
+      self._obj = None
+      self._context = None
+""",
+            instance,
+        )
 
     async def load_discovered(
         self, component_discovered: ComponentDiscovered
@@ -243,41 +271,43 @@ class FileComponentLoader(ComponentLoader):
 
         for component_discovered in await self.component_repository.list():
             self.list_bundles.append(await self.load_discovered(component_discovered))
-            generate_component = await self.generate(component_discovered)
-            self.list_bundles.append(await self.load_generated(generate_component))
+            _list = await self.generate(component_discovered)
+            for generate_component in _list:
+                self.list_bundles.append(await self.load_generated(generate_component))
 
         return self.list_bundles
 
     @staticmethod
     async def get_requires_from_ycappuccino_component(
-        component: type, inspect_modulo: IInspectModule
+        component: type, inspect_module: IInspectModule
     ) -> dict[str, list[list]]:
         sign = inspect.signature(component.__init__)  # type: ignore
         binds: list[list] = []
         requires: list[list] = []
 
-        if inspect_modulo.is_ycappuccino_component(component):
+        if inspect_module.is_ycappuccino_component(component):
             # manage type of bind to generate bind method
-            sign_bind = inspect.signature(component.bind)  # type: ignore
-            for key, item in sign_bind.parameters.items():
-                if key != "self":
-                    if item.annotation.__name__ != "_UnionGenericAlias":
-                        require = [
-                            item.annotation.__name__.lower(),
-                            item.annotation.__name__,
-                            True,
-                            True,
-                            "",
-                            True,
-                        ]
+            if "bind" in component.__dict__:
+                sign_bind = inspect.signature(component.bind)  # type: ignore
+                for key, item in sign_bind.parameters.items():
+                    if key != "self":
+                        if item.annotation.__name__ != "_UnionGenericAlias":
+                            require = [
+                                item.annotation.__name__.lower(),
+                                item.annotation.__name__,
+                                True,
+                                True,
+                                "",
+                                True,
+                            ]
 
-                        requires.append(require)
+                            requires.append(require)
 
-                        elem = [
-                            item.annotation.__name__.lower(),
-                            item.annotation.__name__,
-                        ]
-                        binds.append(elem)
+                            elem = [
+                                item.annotation.__name__.lower(),
+                                item.annotation.__name__,
+                            ]
+                            binds.append(elem)
         properties: list[list] = []
         all: list[list] = []
         for key, item in sign.parameters.items():
@@ -304,7 +334,7 @@ class FileComponentLoader(ComponentLoader):
                     spec_filter = item.annotation.spec_filter
                     _type = item.annotation.type.__name__
                     is_require = True
-                elif inspect_modulo.is_ycappuccino_component(item.annotation, True):
+                elif inspect_module.is_ycappuccino_component(item.annotation, True):
                     _type = item.annotation.__name__
                     is_require = True
 
@@ -359,15 +389,15 @@ class FileComponentLoader(ComponentLoader):
         for prop in dec_tuple:
             properties_dump.append(
                 f"""
-        @BindField("{prop[0]}")
-        def bind_{prop[0]}(self, field, service, service_ref):
-            asyncio.run(self._obj.bind(service))
+    @BindField("{prop[0]}")
+    def bind_{prop[0]}(self, field, service, service_ref):
+        asyncio.run(self._obj.bind(service))
 
-        @UnbindField("{prop[0]}")
-        def un_bind_{prop[0]}(self, field, service, service_ref):
-            asyncio.run(self._obj.un_bind(service))
+    @UnbindField("{prop[0]}")
+    def un_bind_{prop[0]}(self, field, service, service_ref):
+        asyncio.run(self._obj.un_bind(service))
 
-    """
+"""
             )
 
         return properties_dump

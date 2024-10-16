@@ -1,9 +1,14 @@
 import abc
 import typing as t
+
 from ycappuccino.core.services.component_discovery import ComponentDiscovered
 
 
 class IComponentRepository:
+
+    def __init__(self):
+        self.ycappuccino_classes: t.Dict[str, type] = {}
+
     async def get(self, module_name: str) -> ComponentDiscovered: ...
     async def upsert(self, component: ComponentDiscovered) -> None: ...
     async def delete(self, module_name) -> ComponentDiscovered: ...
@@ -12,6 +17,8 @@ class IComponentRepository:
 
 
 class YComponentRepository(abc.ABC, IComponentRepository):
+    @abc.abstractmethod
+    async def add_type(self, a_klass: type) -> None: ...
 
     @abc.abstractmethod
     async def get(self, module_name: str) -> ComponentDiscovered: ...
@@ -31,7 +38,21 @@ class InMemoryYComponentRepository(YComponentRepository):
     """
 
     def __init__(self):
+        super().__init__()
         self.components: t.Dict[str, ComponentDiscovered] = {}
+
+    async def add_type(self, a_klass: type) -> None:
+        if (
+            a_klass is not None
+            and len(a_klass.__subclasses__()) == 0
+            and a_klass not in self.ycappuccino_classes
+        ):
+            self.ycappuccino_classes[a_klass.get_hash()] = a_klass
+        elif (
+            len(a_klass.__subclasses__()) == 0
+            and a_klass.get_hash() in self.ycappuccino_classes
+        ):
+            del self.ycappuccino_classes[a_klass.get_hash()]
 
     async def get(self, module_name: str) -> ComponentDiscovered:
         if module_name not in self.components:

@@ -1,0 +1,34 @@
+from pelix.ipopo.decorators import  BindField, UnbindField,Instantiate, Requires, Provides, ComponentFactory, Property, Validate, Invalidate
+import asyncio
+from ycappuccino.api.proxy import Proxy
+from configuration import Configuration
+
+
+@ComponentFactory("ConfigurationFactory")
+@Provides(specifications=["Configuration"])
+
+@Property("file_name","file_name","config.properties")
+@Instantiate("{0}")
+class ConfigurationFactoryIpopo(Proxy):
+
+    def __int__(self):
+      super().__init__()
+      self._context = None
+      self.file_name = None
+
+
+
+    @Validate
+    def validate(self, context):
+      self._objname = "{1}"
+      self._obj = Configuration(self.file_name)
+      self._obj._ipopo = self
+      self._context = context
+      asyncio.run(self._obj.start())
+
+    @Invalidate
+    def in_validate(self, context):
+      asyncio.run(self._obj.stop())
+      self._objname = None
+      self._obj = None
+      self._context = None
