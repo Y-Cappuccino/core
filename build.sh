@@ -7,4 +7,4 @@ pip install twine
 
 pyb publish
 
-twine upload  target/dist/core*/dist/core*.whl --repository-url https://nexus.ycappuccino.fr/
+twine upload  target/dist/core*/dist/core*.whl --repository-url https://nexus.ycappuccino.fr/simple/
