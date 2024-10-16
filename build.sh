@@ -4,7 +4,7 @@ python -m venv .venv
 . .venv/bin/activate
 pip install pybuilder
 pip install twine
-
+pip install
 pyb publish
 if [ -z "$1" ]
 then
