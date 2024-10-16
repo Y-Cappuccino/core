@@ -12,6 +12,7 @@ use_plugin("python.distutils")
 
 name = "ycappuccino_core"
 default_task = "publish"
+version = "0.1.0"
 
 
 @init
