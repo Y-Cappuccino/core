@@ -2,3 +2,4 @@ pyyaml
 pytest
 asyncio
 pytest-asyncio
+ycappuccino_api
