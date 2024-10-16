@@ -16,4 +16,4 @@ then
     echo "No password supplied"
     exit 0
 fi
-twine upload  target/dist/core*/dist/core*.whl --repository-url https://nexus.ycappuccino.fr/simple/ -u$1 -p$2
+twine upload  target/dist/core*/dist/core*.whl --repository-url https://nexus.ycappuccino.fr/ -u$1 -p$2
