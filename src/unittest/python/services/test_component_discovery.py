@@ -51,7 +51,7 @@ class TestComponentDiscovery(object):
                         path=os.getcwd() + "/configuration.py",
                     ),
                 ],
-                "dict_values([<class 'activity_logger.ActivityLogger'>, <class 'configuration.Configuration'>, <class 'list_components.ListComponent'>])",
+                "dict_values([<class 'configuration.Configuration'>, <class 'activity_logger.ActivityLogger'>, <class 'list_components.ListComponent'>])",
             ),
         ],
     )

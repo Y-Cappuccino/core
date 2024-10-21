@@ -1,4 +1,5 @@
 import os
+from types import ModuleType
 
 import pytest, pytest_asyncio
 
@@ -26,21 +27,21 @@ class TestComponentDiscovery(object):
         self.discovered_components: t.List[ComponentDiscovered] = [
             ComponentDiscovered(
                 module_name="list_components",
-                module=FakeModuleType("list_components"),
-                path=os.getcwd()
-                + "/../../main/python/ycappuccino/core/services/base/list_components.py",
+                module=FakeModuleType("ycappuccino.core.services.base.list_components"),
+                path=os.sep.join(__file__.split(os.sep)[:-1])
+                + "/../../../main/python/ycappuccino/core/services/base/list_components.py",
             ),
             ComponentDiscovered(
                 module_name="activity_logger",
-                module=FakeModuleType("activity_logger"),
-                path=os.getcwd()
-                + "/../../main/python/ycappuccino/core/services/base/activity_logger.py",
+                module=FakeModuleType("ycappuccino.core.services.base.activity_logger"),
+                path=os.sep.join(__file__.split(os.sep)[:-1])
+                + "/../../../main/python/ycappuccino/core/services/base/activity_logger.py",
             ),
             ComponentDiscovered(
                 module_name="configuration",
-                module=FakeModuleType("configuration"),
-                path=os.getcwd()
-                + "/../../main/python/ycappuccino/core/services/base/configuration.py",
+                module=FakeModuleType("ycappuccino.core.services.base.configuration"),
+                path=os.sep.join(__file__.split(os.sep)[:-1])
+                + "/../../../main/python/ycappuccino/core/services/base/configuration.py",
             ),
         ]
         self.component_loader: FileComponentLoader = FileComponentLoader()
@@ -69,7 +70,11 @@ class TestComponentDiscovery(object):
     @staticmethod
     def read_generated_file(name_path: str) -> str:
         content = ""
-        with open(os.getcwd() + f"/generated_component/{name_path}.txt", "r") as file:
+        with open(
+            os.sep.join(__file__.split(os.sep)[:-1])
+            + f"/../generated_component/{name_path}.txt",
+            "r",
+        ) as file:
             content = "".join(file.readlines())
         return content
 
@@ -131,4 +136,24 @@ class TestComponentDiscovery(object):
         assert generate_component.content == expected_components[2].content.format(
             generate_component.instance_name, generate_component.instance_name_obj
         )
+
+    async def test_given_generated_component_when_load_then_loaded_module_done(
+        self,
+    ):
+        # Given
+        generate_components = await self.component_loader.generate(
+            self.discovered_components[0]
+        )
+        with open(self.discovered_components[0].path) as f:
+            content = "\n".join(f.readlines())
+        mymodule = ModuleType(self.discovered_components[0].module_name)
+        exec(content, mymodule.__dict__)
+
+        # when
+        bundles = []
+        bundles.append(
+            await self.component_loader.load_generated(generate_components[0])
+        )
+
         # then
+        assert len(bundles) == 1

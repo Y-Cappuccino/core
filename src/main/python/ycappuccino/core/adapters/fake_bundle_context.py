@@ -17,9 +17,10 @@ class FakeBundle(Bundle):
         self.module_type = None
 
     def start(self):
-        spec = importlib.util.spec_from_file_location(self.module_name, self.file)
-        self.module_type = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(self.module_type)
+        if self.file is not None:
+            spec = importlib.util.spec_from_file_location(self.module_name, self.file)
+            self.module_type = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(self.module_type)
 
     def get_module(self) -> ModuleType:
         return self.module_type

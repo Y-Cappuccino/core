@@ -222,26 +222,26 @@ from {module.__name__} import {klass}
 class {factory}Ipopo(Proxy):
 
     def __int__(self):
-      super().__init__()
-      self._context = None
-      {parameter_dump}
+        super().__init__()
+        self._context = None
+        {parameter_dump}
 
 {bind_methods_dump}
 
     @Validate
     def validate(self, context):
-      self._objname = "{instance}"
-      self._obj = {class_new}
-      self._obj._ipopo = self
-      self._context = context
-      asyncio.run(self._obj.start())
+        self._objname = "{instance}"
+        self._obj = {class_new}
+        self._obj._ipopo = self
+        self._context = context
+        asyncio.run(self._obj.start())
 
     @Invalidate
     def in_validate(self, context):
-      asyncio.run(self._obj.stop())
-      self._objname = None
-      self._obj = None
-      self._context = None
+        asyncio.run(self._obj.stop())
+        self._objname = None
+        self._obj = None
+        self._context = None
 """,
             instance,
         )
