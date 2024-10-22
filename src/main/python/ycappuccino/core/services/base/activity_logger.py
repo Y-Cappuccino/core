@@ -22,7 +22,7 @@ PREFIX_PROPERTY = "activity.logger"
 LOG_DIR = "log"
 
 
-class ActivityLogger(IActivityLogger):
+class ActivityLogger(IActivityLogger, logging.Logger):
 
     def __init__(self, config: IConfiguration, name: str = "main") -> None:
         super().__init__()
@@ -77,6 +77,26 @@ class ActivityLogger(IActivityLogger):
             return "Log-Activity-{}.log".format(self._name)
         else:
             return "Log-Activity.log"
+
+    def load_configuration(self):
+        # load configuration
+        w_data_path = os.getcwd() + "/data"
+        self._file = os.path.join(w_data_path, LOG_DIR)
+        w_file_name = self._config.get(
+            self.get_prefix_config() + ".file", self.get_default_log_name()
+        )
+        self._file = os.path.join(self._file, w_file_name)
+
+        # see https://docs.python.org/2/library/logging.html#logrecord-attributes
+        self._format = self._config.get(
+            self.get_prefix_config() + ".format",
+            "%(asctime)s;%(levelname)s;%(threadName)s;%(filename)s;%(module)s;%(funcName)s;(%(lineno)d);%(message)s",
+        )
+        self._file_nb = self._config.get(self.get_prefix_config() + ".nb", 10)
+        self._file_size = self._config.get(
+            self.get_prefix_config() + ".size", 20 * 1024 * 1024
+        )
+        self._level = self._config.get(self.get_prefix_config() + ".level", "INFO")
 
     async def start(self) -> None:
         self.info(f"{self._name} is valid")
