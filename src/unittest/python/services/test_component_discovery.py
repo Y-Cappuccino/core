@@ -15,6 +15,8 @@ from ycappuccino.core.adapters.fake_bundle_context import (
 from ycappuccino.core import framework
 from ycappuccino.core.api import ComponentDiscovered
 
+path_module = os.path.dirname(__file__)
+
 
 @pytest.mark.asyncio
 class TestComponentDiscovery(object):
@@ -23,7 +25,7 @@ class TestComponentDiscovery(object):
     def setup(self):
         self.discovery = FileComponentDiscovery()
         self.discovery.path = (
-            os.getcwd() + "/../../main/python/ycappuccino/core/services/base"
+            path_module + "/../../../main/python/ycappuccino/core/services/base"
         )
         self.discovery.context = FakeBundleContext()
         self.discovery._inspect_module = InspectModuleType()
