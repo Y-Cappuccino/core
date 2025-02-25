@@ -24,11 +24,11 @@ class ConfigurationFactoryIpopo(Proxy):
         self._obj = Configuration(self.file_name)
         self._obj._ipopo = self
         self._context = context
-        asyncio.run(self._obj.start())
+        asyncio.create_task(self._obj.start())
 
     @Invalidate
     def in_validate(self, context):
-        asyncio.run(self._obj.stop())
+        asyncio.create_task(self._obj.stop())
         self._objname = None
         self._obj = None
         self._context = None

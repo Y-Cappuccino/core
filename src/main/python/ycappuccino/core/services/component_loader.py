@@ -2,6 +2,7 @@
 # class that allow to generate from ycapuccino components pelix components in order to be loaded by the pelix framework
 #
 import abc
+import asyncio
 import sys
 import typing as t
 import re
@@ -9,12 +10,12 @@ from datetime import datetime
 from pathlib import Path
 from types import ModuleType
 
-from ycappuccino.core.services.component_discovery import ComponentDiscovered
-from ycappuccino.core.api import (
-    IInspectModule,
-    IYCappuccinoComponentLoader,
+from ycappuccino.api.core import (
+    ComponentDiscovered,
     GeneratedComponent,
     IComponentDiscovery,
+    IInspectModule,
+    IYCappuccinoComponentLoader,
 )
 from ycappuccino.core import framework
 from pelix.ipopo.decorators import (
@@ -75,7 +76,7 @@ class FileComponentLoader(ComponentLoader):
     @Validate
     def validate(self, a_context: BundleContext) -> None:
         self.context = a_context
-        self.loads()
+        asyncio.run(self.loads())
 
     @Invalidate
     def in_validate(self, a_context: BundleContext) -> None:
@@ -234,11 +235,11 @@ class {factory}Ipopo(Proxy):
         self._obj = {class_new}
         self._obj._ipopo = self
         self._context = context
-        asyncio.run(self._obj.start())
+        asyncio.create_task(self._obj.start())
 
     @Invalidate
     def in_validate(self, context):
-        asyncio.run(self._obj.stop())
+        asyncio.create_task(self._obj.stop())
         self._objname = None
         self._obj = None
         self._context = None
@@ -391,11 +392,11 @@ class {factory}Ipopo(Proxy):
                 f"""
     @BindField("{prop[0]}")
     def bind_{prop[0]}(self, field, service, service_ref):
-        asyncio.run(self._obj.bind(service))
+        asyncio.create_task(self._obj.bind(service))
 
     @UnbindField("{prop[0]}")
     def un_bind_{prop[0]}(self, field, service, service_ref):
-        asyncio.run(self._obj.un_bind(service))
+        asyncio.create_task(self._obj.un_bind(service))
 
 """
             )

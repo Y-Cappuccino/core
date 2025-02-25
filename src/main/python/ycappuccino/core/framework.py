@@ -48,6 +48,7 @@ class YCappuccino(Framework):
         self,
     ):
         super().__init__()
+        self.application_yaml = None
         self.bundle_prefix = None
 
     def get_bundle_prefix(self):
@@ -60,8 +61,9 @@ class YCappuccino(Framework):
 
     def start(self, yml_path: str) -> None:
         """initiate ipopo runtime and handle component that auto discover bundle and ycappuccino component"""
-        with open(yml_path, "r") as file:
-            self.application_yaml = yaml.safe_load(file)
+        if yml_path is not None:
+            with open(yml_path, "r") as file:
+                self.application_yaml = yaml.safe_load(file)
         self.ipopo: t.Optional[pelix.framework.Framework] = None
         self.context: t.Optional[BundleContext] = None
 
@@ -81,6 +83,10 @@ class YCappuccino(Framework):
                 # EventAdmin,
                 "pelix.services.eventadmin",
                 "pelix.shell.eventadmin",
+                "ycappuccino.core.services.component_discovery",
+                "ycappuccino.core.services.component_loader",
+                "ycappuccino.core.repositories.component_repositories",
+                "ycappuccino.core.adapters.inspect_module",
             )
         )
 
@@ -91,7 +97,7 @@ class YCappuccino(Framework):
             ipopo.instantiate(
                 pelix.services.FACTORY_EVENT_ADMIN, "event-client_pyscript_core", {}
             )
-
+        # Instantiate ycappuccino core
         self.context = self.ipopo.get_bundle_context()
 
         try:

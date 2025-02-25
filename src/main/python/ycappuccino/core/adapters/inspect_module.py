@@ -4,8 +4,7 @@ from types import ModuleType
 
 from pelix.ipopo.decorators import ComponentFactory, Instantiate, Provides
 
-from ycappuccino.api.core import YCappuccinoComponent
-from ycappuccino.core.api import IInspectModule
+from ycappuccino.api.core import IInspectModule, YCappuccinoComponent
 
 
 class InspectModule(abc.ABC, IInspectModule):

@@ -25,11 +25,11 @@ class ActivityLoggerFactoryIpopo(Proxy):
         self._obj = ActivityLogger(None if self.config is None else  self.config[0]._obj if  isinstance(self.config,list) else self.config._obj,self.name)
         self._obj._ipopo = self
         self._context = context
-        asyncio.run(self._obj.start())
+        asyncio.create_task(self._obj.start())
 
     @Invalidate
     def in_validate(self, context):
-        asyncio.run(self._obj.stop())
+        asyncio.create_task(self._obj.stop())
         self._objname = None
         self._obj = None
         self._context = None

@@ -13,9 +13,10 @@ from pelix.ipopo.decorators import (
     Invalidate,
 )
 from pelix.framework import BundleContext
-from ycappuccino.core.api import (
-    IComponentDiscovery,
+
+from ycappuccino.api.core import (
     ComponentDiscovered,
+    IComponentDiscovery,
     IInspectModule,
 )
 from ycappuccino.core import framework
@@ -46,8 +47,9 @@ class FileComponentDiscovery(ComponentDiscovery):
         self.context = a_context
         self.path = (
             framework.get_framework().application_yaml["component_path"]
-            if "component_path" in framework.get_framework().application_yaml.keys()
-            else os.getcwd()
+            if framework.get_framework().application_yaml is not None
+            and "component_path" in framework.get_framework().application_yaml.keys()
+            else os.getcwd() + "/../"
         )
         asyncio.run(self.discover(self.path))
 
