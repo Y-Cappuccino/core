@@ -25,7 +25,7 @@ LOG_DIR = "log"
 class ActivityLogger(IActivityLogger, logging.Logger):
 
     def __init__(self, config: IConfiguration, name: str = "main") -> None:
-        super().__init__()
+        super().__init__(name)
 
         self._config: IConfiguration = config
         self._name: str = name  # name of the component
