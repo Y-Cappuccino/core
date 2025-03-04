@@ -14,23 +14,24 @@ from pelix.ipopo.decorators import (
 )
 from pelix.framework import BundleContext
 
-from ycappuccino.api.core import (
+from ycappuccino.api.core import IComponentDiscovery, IInspectModule
+from ycappuccino.api.core_models import (
     ComponentDiscovered,
-    IComponentDiscovery,
-    IInspectModule,
 )
 from ycappuccino.core import framework
+from ycappuccino.core.repositories.component_repositories import IComponentRepository
 
 
 class ComponentDiscovery(abc.ABC, IComponentDiscovery):
 
     @abc.abstractmethod
-    def discover(self, path: str) -> None: ...
+    def discover(self, path: t.Optional[str] = None) -> None: ...
 
 
 @ComponentFactory("FileComponentDiscovery-Factory")
 @Provides(specifications=[IComponentDiscovery.__name__])
 @Requires("_inspect_module", IInspectModule.__name__)
+@Requires("_component_repository", IComponentRepository.__name__)
 @Instantiate("FileComponentDiscovery")
 class FileComponentDiscovery(ComponentDiscovery):
     """
@@ -40,6 +41,7 @@ class FileComponentDiscovery(ComponentDiscovery):
     def __init__(self):
         self.path: t.Optional[str] = None
         self.context: t.Optional[BundleContext] = None
+        self._component_repository: t.Optional[IComponentRepository] = None
         self._inspect_module: t.Optional[IInspectModule] = None
 
     @Validate
@@ -57,16 +59,18 @@ class FileComponentDiscovery(ComponentDiscovery):
     def in_validate(self, a_context: BundleContext) -> None:
         self.context = None
 
-    async def discover(self, path: str) -> None:
+    async def discover(self, path: t.Optional[str] = None) -> None:
         """
         discover component in path
         :param path:
         :return:
         """
+        if path is None:
+            path = self.path
         await self._discover(path)
-        for comp in framework.get_framework().component_repository.components.values():
+        for comp in self._component_repository.components.values():
             for klass in self._inspect_module.get_ycappuccino_component(comp.module):
-                await framework.get_framework().component_repository.add_type(klass)
+                await self._component_repository.add_type(klass)
 
     async def _discover(self, path: str, module_name: t.Optional[str] = "") -> None:
         """

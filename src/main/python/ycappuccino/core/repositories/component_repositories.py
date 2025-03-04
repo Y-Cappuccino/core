@@ -1,14 +1,18 @@
 import abc
 import typing as t
 
-from ycappuccino.core.services.component_discovery import ComponentDiscovered
+from pelix.ipopo.decorators import ComponentFactory, Instantiate, Provides
+
+from ycappuccino.api.core_models import ComponentDiscovered
 
 
 class IComponentRepository:
 
     def __init__(self):
         self.ycappuccino_classes: t.Dict[str, type] = {}
+        self.components: t.Dict[str, ComponentDiscovered] = {}
 
+    async def add_type(self, a_klass: type) -> None: ...
     async def get(self, module_name: str) -> ComponentDiscovered: ...
     async def upsert(self, component: ComponentDiscovered) -> None: ...
     async def delete(self, module_name) -> ComponentDiscovered: ...
@@ -32,6 +36,9 @@ class YComponentRepository(abc.ABC, IComponentRepository):
     async def list(self) -> t.List[ComponentDiscovered]: ...
 
 
+@ComponentFactory("InMemoryYComponentRepository-Factory")
+@Provides(specifications=[IComponentRepository.__name__])
+@Instantiate("InMemoryYComponentRepository")
 class InMemoryYComponentRepository(YComponentRepository):
     """
     In memory repository for component discovered
@@ -39,7 +46,6 @@ class InMemoryYComponentRepository(YComponentRepository):
 
     def __init__(self):
         super().__init__()
-        self.components: t.Dict[str, ComponentDiscovered] = {}
 
     async def add_type(self, a_klass: type) -> None:
         if (

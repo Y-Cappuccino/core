@@ -11,13 +11,10 @@ from pathlib import Path
 from types import ModuleType
 
 from ycappuccino.api.core import (
-    ComponentDiscovered,
-    GeneratedComponent,
     IComponentDiscovery,
     IInspectModule,
-    IYCappuccinoComponentLoader,
+    IComponentLoader,
 )
-from ycappuccino.core import framework
 from pelix.ipopo.decorators import (
     ComponentFactory,
     Requires,
@@ -27,12 +24,13 @@ from pelix.ipopo.decorators import (
     Invalidate,
 )
 
+from ycappuccino.api.core_models import ComponentDiscovered, GeneratedComponent
 from ycappuccino.core.repositories.component_repositories import IComponentRepository
 from pelix.framework import Bundle, BundleContext
 import inspect
 
 
-class ComponentLoader(abc.ABC):
+class ComponentLoader(IComponentLoader):
 
     def __init__(self):
         self._component_discovery = None
@@ -54,9 +52,10 @@ class ComponentLoader(abc.ABC):
 
 
 @ComponentFactory("FileComponentLoader-Factory")
-@Provides(specifications=[IYCappuccinoComponentLoader.__name__])
+@Provides(specifications=[IComponentLoader.__name__])
 @Requires("_component_discovery", IComponentDiscovery.__name__)
 @Requires("_inspect_module", IInspectModule.__name__)
+@Requires("_component_repository", IComponentRepository.__name__)
 @Instantiate("FileComponentLoader")
 class FileComponentLoader(ComponentLoader):
     """
@@ -64,14 +63,13 @@ class FileComponentLoader(ComponentLoader):
     """
 
     def __init__(self):
+        super().__init__()
         self.generated_components: t.Dict[str, GeneratedComponent] = {}
-        self.context: BundleContext = None
-        self.component_discovery: IComponentDiscovery = None
-        self.component_repository: IComponentRepository = (
-            framework.get_framework().component_repository
-        )
+        self.context: t.Optional[BundleContext] = None
+        self._component_discovery: t.Optional[IComponentDiscovery] = None
+        self._component_repository: t.Optional[IComponentRepository] = None
         self.list_bundles: t.List[Bundle] = []
-        self._inspect_module: IInspectModule = None
+        self._inspect_module: t.Optional[IInspectModule] = None
 
     @Validate
     def validate(self, a_context: BundleContext) -> None:
@@ -99,7 +97,7 @@ class FileComponentLoader(ComponentLoader):
             )
 
         # get  class is YCappuccinoComponent
-        list_ycappuccino_component = self.component_repository.ycappuccino_classes
+        list_ycappuccino_component = self._component_repository.ycappuccino_classes
         if not Path(path).exists():
             raise FileNotFoundError(f"file {path} not found")
         with open(path, "r") as f:
@@ -272,7 +270,7 @@ class {factory}Ipopo(Proxy):
         load all component discovered
         """
 
-        for component_discovered in await self.component_repository.list():
+        for component_discovered in await self._component_repository.list():
             self.list_bundles.append(await self.load_discovered(component_discovered))
             _list = await self.generate(component_discovered)
             for generate_component in _list:

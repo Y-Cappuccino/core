@@ -7,6 +7,7 @@ from ycappuccino.core.framework import YCappuccino
 class Runner(abc.ABC, IRunner):
 
     def __init__(self):
+
         self._framework = YCappuccino()
 
     def start(self) -> None:
