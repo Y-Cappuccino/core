@@ -13,7 +13,7 @@ from ycappuccino.core.adapters.fake_bundle_context import (
     FakeModuleType,
 )
 from ycappuccino.core import framework
-from ycappuccino.core.api import ComponentDiscovered
+from ycappuccino.api.core import ComponentDiscovered
 
 path_module = os.path.dirname(__file__)
 

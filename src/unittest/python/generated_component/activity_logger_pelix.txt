@@ -5,7 +5,7 @@ from ycappuccino.core.services.base.activity_logger import ActivityLogger
 
 
 @ComponentFactory("ActivityLoggerFactory")
-@Provides(specifications=["ActivityLogger"])
+@Provides(specifications=["ActivityLogger","IActivityLogger","YCappuccinoComponent","Logger","Filterer"])
 @Requires("config", "IConfiguration", optional=False,aggregate=False, spec_filter="")
 @Property("name","name","main")
 @Instantiate("{0}")

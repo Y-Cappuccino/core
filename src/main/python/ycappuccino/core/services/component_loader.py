@@ -107,6 +107,7 @@ class FileComponentLoader(ComponentLoader):
 
         content = ""
         for ycappuccino_component in list_ycappuccino_component.values():
+            list_component_hierarchy = list(inspect.getmro(ycappuccino_component))
             list_matches = re.findall(
                 f"class {ycappuccino_component.__name__}.*",
                 "\n".join(content_original_file),
@@ -114,7 +115,7 @@ class FileComponentLoader(ComponentLoader):
             if list_matches is not None and len(list_matches) > 0:
                 content_next, instance_name = await self.generate_component(
                     ycappuccino_component,
-                    [ycappuccino_component],
+                    list_component_hierarchy,
                     module,
                 )
                 content = content + content_next
@@ -155,6 +156,7 @@ class FileComponentLoader(ComponentLoader):
             [
                 comp.__name__
                 for comp in list_ycappuccino_component
+                if comp.__name__ is not abc.ABC.__name__ and comp.__name__ != "object"
                 if comp.__name__ not in props.get("requires_spec")  # type: ignore
                 and comp.__name__ not in props.get("binds_spec")  # type: ignore
             ]

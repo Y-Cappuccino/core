@@ -9,7 +9,7 @@ from ycappuccino.core.adapters.fake_bundle_context import (
 )
 from ycappuccino.core import framework
 from ycappuccino.core.adapters.inspect_module import FakeInspectModuleType
-from ycappuccino.core.api import ComponentDiscovered, GeneratedComponent
+from ycappuccino.api.core import ComponentDiscovered, GeneratedComponent
 
 import typing as t
 

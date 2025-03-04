@@ -5,7 +5,7 @@ from ycappuccino.core.services.base.configuration import Configuration
 
 
 @ComponentFactory("ConfigurationFactory")
-@Provides(specifications=["Configuration"])
+@Provides(specifications=["Configuration","IConfiguration","YCappuccinoComponent"])
 
 @Property("file_name","file_name","config.properties")
 @Instantiate("{0}")

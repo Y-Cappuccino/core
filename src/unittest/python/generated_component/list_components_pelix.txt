@@ -5,7 +5,7 @@ from ycappuccino.core.services.base.list_components import ListComponent
 
 
 @ComponentFactory("ListComponentFactory")
-@Provides(specifications=["ListComponent"])
+@Provides(specifications=["ListComponent","IListComponent","YCappuccinoComponent"])
 @Requires("ycappuccinoremote", "YCappuccinoRemote", optional=True,aggregate=True, spec_filter="")
 @Requires("logger", "IActivityLogger", optional=False,aggregate=False, spec_filter="(name=main)")
 
