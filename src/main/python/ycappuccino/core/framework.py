@@ -55,7 +55,7 @@ class YCappuccino(Framework):
         self.bundle_prefix = None
         self.component_runner = component_runner
 
-    def start(self, yml_path: str) -> None:
+    def start(self, yml_path: t.Optional[str] = None) -> None:
         """initiate ipopo runtime and handle component that auto discover bundle and ycappuccino component"""
         if yml_path is not None:
             with open(yml_path, "r") as file:

@@ -39,6 +39,7 @@ class FileComponentDiscovery(ComponentDiscovery):
     """
 
     def __init__(self):
+        self.validate_task = None
         self.path: t.Optional[str] = None
         self.context: t.Optional[BundleContext] = None
         self._component_repository: t.Optional[IComponentRepository] = None
@@ -51,9 +52,10 @@ class FileComponentDiscovery(ComponentDiscovery):
             framework.get_framework().application_yaml["component_path"]
             if framework.get_framework().application_yaml is not None
             and "component_path" in framework.get_framework().application_yaml.keys()
-            else os.getcwd() + "/../"
+            else os.getcwd() + "/../../"
         )
-        asyncio.run(self.discover(self.path))
+
+        self.validate_task = asyncio.create_task(self.discover(self.path))
 
     @Invalidate
     def in_validate(self, a_context: BundleContext) -> None:
@@ -115,7 +117,7 @@ class FileComponentDiscovery(ComponentDiscovery):
                         installed_bundle.start()
                         module = installed_bundle.get_module()
 
-                        await framework.get_framework().component_repository.upsert(
+                        await self._component_repository.upsert(
                             ComponentDiscovered(
                                 module=module,
                                 path=file,

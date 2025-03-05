@@ -1,5 +1,7 @@
+import asyncio
 import os
 import sys
+import time
 from abc import ABC, abstractmethod
 
 import pelix.services
@@ -13,6 +15,7 @@ from ycappuccino.core.adapters.inspect_module import (
     InspectModuleType,
 )
 from ycappuccino.core.repositories.component_repositories import (
+    IComponentRepository,
     InMemoryYComponentRepository,
 )
 from ycappuccino.core.services.base.activity_logger import ActivityLogger
@@ -40,13 +43,14 @@ class FakeComponentRunner(IComponentRunner):
 
     def __init__(
         self,
+        component_repository: IComponentRepository,
+        component_loader: FileComponentLoader,
+        component_discovery: FileComponentDiscovery,
     ) -> None:
         super().__init__()
-        component_repositories: InMemoryYComponentRepository = (
-            InMemoryYComponentRepository()
-        )
-        self.component_loader: FileComponentLoader = FileComponentLoader()
-        self.component_loader._component_repository = component_repositories
+        self.component_repositories = component_repository
+        self.component_loader = component_loader
+        self.component_loader._component_repository = self.component_repositories
         bundle_context = FakeBundleContext()
         self.component_loader._inspect_module = FakeInspectModuleType(
             ycappuccino_by_module={
@@ -57,8 +61,8 @@ class FakeComponentRunner(IComponentRunner):
         )
 
         self.component_loader.context = bundle_context
-        self.component_discovery = FileComponentDiscovery()
-        self.component_discovery._component_repository = component_repositories
+        self.component_discovery = component_discovery
+        self.component_discovery._component_repository = self.component_repositories
         self.component_discovery.path = (
             path_module + "/../../../main/python/ycappuccino/core/services/base"
         )
@@ -70,8 +74,10 @@ class FakeComponentRunner(IComponentRunner):
 
     def run(self):
         # execute what will framework do to discover and load component
-        self.component_discovery.discover()
-        self.component_loader.loads()
+        self.component_discovery.validate(self.component_discovery.context)
+        time.sleep(0.1)
+        self.component_loader.validate(self.component_loader.context)
+        time.sleep(0.1)
 
 
 class PelixComponentRunner(IComponentRunner):

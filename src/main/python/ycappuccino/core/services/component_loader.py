@@ -64,6 +64,7 @@ class FileComponentLoader(ComponentLoader):
 
     def __init__(self):
         super().__init__()
+        self.validate_task = None
         self.generated_components: t.Dict[str, GeneratedComponent] = {}
         self.context: t.Optional[BundleContext] = None
         self._component_discovery: t.Optional[IComponentDiscovery] = None
@@ -74,7 +75,7 @@ class FileComponentLoader(ComponentLoader):
     @Validate
     def validate(self, a_context: BundleContext) -> None:
         self.context = a_context
-        asyncio.run(self.loads())
+        self.validate_task = asyncio.create_task(self.loads())
 
     @Invalidate
     def in_validate(self, a_context: BundleContext) -> None:
@@ -274,6 +275,9 @@ class {factory}Ipopo(Proxy):
             self.list_bundles.append(await self.load_discovered(component_discovered))
             _list = await self.generate(component_discovered)
             for generate_component in _list:
+                self.generated_components[generate_component.instance_name] = (
+                    generate_component
+                )
                 self.list_bundles.append(await self.load_generated(generate_component))
 
         return self.list_bundles
