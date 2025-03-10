@@ -19,6 +19,8 @@ version = "0.1.0"
 def set_properties(project):
     project.set_property("core", False)  # default is True
     project.depends_on_requirements("requirements.txt")
+    project.include_file("scripts", "application.yaml")
+
     project.depends_on(
         "ycappuccino_api", url="git+https://github.com/Y-Cappuccino/api.git"
     )
