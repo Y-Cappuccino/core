@@ -2,13 +2,13 @@ import asyncio
 import os
 import sys
 import time
-from abc import ABC, abstractmethod
 
 import pelix.services
 from pelix.framework import BundleContext, create_framework
 from pelix.ipopo.constants import use_ipopo
 import typing as t
-from ycappuccino.api.core import IComponentDiscovery, IComponentLoader
+from ycappuccino.api.core import IComponentDiscovery, IComponentLoader, IComponentRunner
+from ycappuccino.core.adapters import inspect_module
 from ycappuccino.core.adapters.fake_bundle_context import FakeBundleContext
 from ycappuccino.core.adapters.inspect_module import (
     FakeInspectModuleType,
@@ -16,27 +16,13 @@ from ycappuccino.core.adapters.inspect_module import (
 )
 from ycappuccino.core.repositories.component_repositories import (
     IComponentRepository,
-    InMemoryYComponentRepository,
 )
+from ycappuccino.core.services import component_discovery, component_loader
 from ycappuccino.core.services.base.activity_logger import ActivityLogger
 from ycappuccino.core.services.base.configuration import Configuration
 from ycappuccino.core.services.base.list_components import ListComponent
-from ycappuccino.core.services.component_discovery import FileComponentDiscovery
-from ycappuccino.core.services.component_loader import FileComponentLoader
 
 path_module = os.path.dirname(__file__)
-
-
-class IComponentRunner(ABC):
-
-    def __init__(
-        self,
-    ) -> None: ...
-
-    @abstractmethod
-    def run(self): ...
-
-    def set_config(self, a_config: t.Dict[str, t.Any]) -> t.List[str]: ...
 
 
 class FakeComponentRunner(IComponentRunner):
@@ -44,8 +30,8 @@ class FakeComponentRunner(IComponentRunner):
     def __init__(
         self,
         component_repository: IComponentRepository,
-        component_loader: FileComponentLoader,
-        component_discovery: FileComponentDiscovery,
+        component_loader: IComponentLoader,
+        component_discovery: IComponentDiscovery,
     ) -> None:
         super().__init__()
         self.component_repositories = component_repository
@@ -72,11 +58,11 @@ class FakeComponentRunner(IComponentRunner):
     def set_config(self, a_config: t.Dict[str, t.Any]) -> t.List[str]:
         return []
 
-    def run(self):
+    async def run(self):
         # execute what will framework do to discover and load component
-        self.component_discovery.validate(self.component_discovery.context)
+        self.component_discovery.validate(self.component_discovery.context)  # type: ignore
         time.sleep(0.1)
-        self.component_loader.validate(self.component_loader.context)
+        self.component_loader.validate(self.component_loader.context)  # type: ignore
         time.sleep(0.1)
 
 
@@ -99,7 +85,7 @@ class PelixComponentRunner(IComponentRunner):
             return [self.bundle_prefix]
         return []
 
-    def run(self):
+    async def run(self):
         self.ipopo = create_framework(
             (
                 # iPOPO
@@ -119,6 +105,7 @@ class PelixComponentRunner(IComponentRunner):
                 "ycappuccino.core.services.component_loader",
                 "ycappuccino.core.repositories.component_repositories",
                 "ycappuccino.core.adapters.inspect_module",
+                "ycappuccino.core.services.component_discovery",
             )
         )
 
@@ -129,6 +116,7 @@ class PelixComponentRunner(IComponentRunner):
             ipopo.instantiate(
                 pelix.services.FACTORY_EVENT_ADMIN, "event-client_pyscript_core", {}
             )
+
         # Instantiate ycappuccino core
         self.context = self.ipopo.get_bundle_context()
 

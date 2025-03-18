@@ -4,6 +4,8 @@ import glob
 import os
 
 import typing as t
+from pathlib import Path
+
 from pelix.ipopo.decorators import (
     ComponentFactory,
     Requires,
@@ -48,14 +50,15 @@ class FileComponentDiscovery(ComponentDiscovery):
     @Validate
     def validate(self, a_context: BundleContext) -> None:
         self.context = a_context
+        current_dir = os.path.dirname(os.path.abspath(__file__))
         self.path = (
             framework.get_framework().application_yaml["component_path"]
             if framework.get_framework().application_yaml is not None
             and "component_path" in framework.get_framework().application_yaml.keys()
-            else os.getcwd() + "/../../"
+            else current_dir + "/../"
         )
 
-        self.validate_task = asyncio.create_task(self.discover(self.path))
+        asyncio.create_task(self.discover(self.path))
 
     @Invalidate
     def in_validate(self, a_context: BundleContext) -> None:
@@ -83,6 +86,7 @@ class FileComponentDiscovery(ComponentDiscovery):
         """
         for file in glob.iglob(path + "/*"):
             file = file.replace(os.sep, "/")
+            file = Path(file).resolve().__str__()
             if "/" in file and not file.split("/")[-1].startswith("test_"):
 
                 if (

@@ -75,7 +75,8 @@ class FileComponentLoader(ComponentLoader):
     @Validate
     def validate(self, a_context: BundleContext) -> None:
         self.context = a_context
-        self.validate_task = asyncio.create_task(self.loads())
+
+        asyncio.create_task(self.loads())
 
     @Invalidate
     def in_validate(self, a_context: BundleContext) -> None:
@@ -98,14 +99,16 @@ class FileComponentLoader(ComponentLoader):
             )
 
         # get  class is YCappuccinoComponent
-        list_ycappuccino_component = self._component_repository.ycappuccino_classes
+        list_ycappuccino_component = self._inspect_module.get_ycappuccino_component(
+            module
+        )
         if not Path(path).exists():
             raise FileNotFoundError(f"file {path} not found")
         with open(path, "r") as f:
             content_original_file = f.readlines()
 
         content = ""
-        for ycappuccino_component in list_ycappuccino_component.values():
+        for ycappuccino_component in list_ycappuccino_component:
             list_component_hierarchy = list(inspect.getmro(ycappuccino_component))
             list_matches = re.findall(
                 f"class {ycappuccino_component.__name__}.*",
@@ -259,7 +262,10 @@ class {factory}Ipopo(Proxy):
 
     async def load_generated(self, component_generated: GeneratedComponent) -> Bundle:
         mymodule = ModuleType(component_generated.module_name)
-        exec(component_generated.content, mymodule.__dict__)
+        try:
+            exec(component_generated.content, mymodule.__dict__)
+        except BaseException as e:
+            print(f"error {e}")
         sys.modules[component_generated.module_name] = mymodule
 
         bundle = self.context.install_bundle(component_generated.module_name)

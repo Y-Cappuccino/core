@@ -42,7 +42,11 @@ class FakeInspectModuleType(InspectModule):
         self.ycappuccino_by_module = ycappuccino_by_module
 
     def get_ycappuccino_component(self, module: ModuleType) -> list[type]:
-        return self.ycappuccino_by_module.get(module.__name__, [])
+        list: t.List[type] = []
+        for name in self.ycappuccino_by_module.keys():
+            if name in module.__name__:
+                list.extend(self.ycappuccino_by_module[name])
+        return list
 
     def add_ycappuccino_component(self, module_name: str, klass: type):
         if module_name not in self.ycappuccino_by_module:

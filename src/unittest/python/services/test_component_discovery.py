@@ -7,6 +7,9 @@ import typing as t
 from ycappuccino.core.adapters.inspect_module import (
     InspectModuleType,
 )
+from ycappuccino.core.repositories.component_repositories import (
+    InMemoryYComponentRepository,
+)
 from ycappuccino.core.services.component_discovery import FileComponentDiscovery
 from ycappuccino.core.adapters.fake_bundle_context import (
     FakeBundleContext,
@@ -28,6 +31,7 @@ class TestComponentDiscovery(object):
             path_module + "/../../../main/python/ycappuccino/core/services/base"
         )
         self.discovery.context = FakeBundleContext()
+        self.discovery._component_repository = InMemoryYComponentRepository()
         self.discovery._inspect_module = InspectModuleType()
         self.framework = framework.get_framework()
         self.framework.bundle_prefix = ["ycappuccino"]
@@ -65,10 +69,10 @@ class TestComponentDiscovery(object):
         # Given
         await self.discovery.discover(self.discovery.path)
         # When
-        assert len(self.framework.component_repository.components) == 4
+        assert len(self.discovery._component_repository.components) == 4
         for component_assert in components_discovered:
             # then
-            component_discovered = await self.framework.component_repository.get(
+            component_discovered = await self.discovery._component_repository.get(
                 component_assert.module_name
             )
             assert component_discovered.module_name == component_assert.module_name
@@ -80,6 +84,6 @@ class TestComponentDiscovery(object):
             assert path.cwd() == expect_path.cwd()
 
         assert (
-            self.framework.component_repository.ycappuccino_classes.values().__str__()
+            self.discovery._component_repository.ycappuccino_classes.values().__str__()
             == ycappuccino_components
         )

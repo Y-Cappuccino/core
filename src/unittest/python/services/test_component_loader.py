@@ -3,13 +3,14 @@ from types import ModuleType
 
 import pytest, pytest_asyncio
 
+from ycappuccino.api.core_models import GeneratedComponent
 from ycappuccino.core.adapters.fake_bundle_context import (
     FakeBundleContext,
     FakeModuleType,
 )
 from ycappuccino.core import framework
 from ycappuccino.core.adapters.inspect_module import FakeInspectModuleType
-from ycappuccino.api.core import ComponentDiscovered, GeneratedComponent
+from ycappuccino.api.core import ComponentDiscovered
 
 import typing as t
 
