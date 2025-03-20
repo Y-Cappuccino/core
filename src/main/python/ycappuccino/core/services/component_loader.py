@@ -1,3 +1,4 @@
+# core
 #
 # class that allow to generate from ycapuccino components pelix components in order to be loaded by the pelix framework
 #
@@ -25,6 +26,7 @@ from pelix.ipopo.decorators import (
 )
 
 from ycappuccino.api.core_models import ComponentDiscovered, GeneratedComponent
+from ycappuccino.api.executor_service import execute_async_in_thread
 from ycappuccino.core.repositories.component_repositories import IComponentRepository
 from pelix.framework import Bundle, BundleContext
 import inspect
@@ -52,7 +54,7 @@ class ComponentLoader(IComponentLoader):
 
 
 @ComponentFactory("FileComponentLoader-Factory")
-@Provides(specifications=[IComponentLoader.__name__])
+@Provides(specifications=[IComponentLoader.__name__], controller="controller")
 @Requires("_component_discovery", IComponentDiscovery.__name__)
 @Requires("_inspect_module", IInspectModule.__name__)
 @Requires("_component_repository", IComponentRepository.__name__)
@@ -71,12 +73,13 @@ class FileComponentLoader(ComponentLoader):
         self._component_repository: t.Optional[IComponentRepository] = None
         self.list_bundles: t.List[Bundle] = []
         self._inspect_module: t.Optional[IInspectModule] = None
+        self.controller = False
 
     @Validate
     def validate(self, a_context: BundleContext) -> None:
         self.context = a_context
 
-        asyncio.create_task(self.loads())
+        execute_async_in_thread(self.loads)
 
     @Invalidate
     def in_validate(self, a_context: BundleContext) -> None:
@@ -216,11 +219,12 @@ class FileComponentLoader(ComponentLoader):
             f"""from pelix.ipopo.decorators import  BindField, UnbindField,Instantiate, Requires, Provides, ComponentFactory, Property, Validate, Invalidate
 import asyncio
 from ycappuccino.api.proxy import Proxy
+from ycappuccino.api.executor_service import execute_async_in_thread
 from {module.__name__} import {klass}
 
 
 @ComponentFactory("{factory}")
-@Provides(specifications=["{provides}"])
+@Provides(specifications=["{provides}"], controller="controller")
 {requires_dump}
 {properties_dump}
 @Instantiate("{instance}")
@@ -229,9 +233,16 @@ class {factory}Ipopo(Proxy):
     def __int__(self):
         super().__init__()
         self._context = None
+        self.controller = False
         {parameter_dump}
-
 {bind_methods_dump}
+    async def _start(self):
+        await self._obj.start()
+        self.controller = True
+
+    async def _stop(self):
+        await self._obj.stop()
+        self.controller = False
 
     @Validate
     def validate(self, context):
@@ -239,11 +250,11 @@ class {factory}Ipopo(Proxy):
         self._obj = {class_new}
         self._obj._ipopo = self
         self._context = context
-        asyncio.create_task(self._obj.start())
+        execute_async_in_thread(self._start)
 
     @Invalidate
     def in_validate(self, context):
-        asyncio.create_task(self._obj.stop())
+        execute_async_in_thread(self._stop)
         self._objname = None
         self._obj = None
         self._context = None
@@ -264,29 +275,37 @@ class {factory}Ipopo(Proxy):
         mymodule = ModuleType(component_generated.module_name)
         try:
             exec(component_generated.content, mymodule.__dict__)
+
+            sys.modules[component_generated.module_name] = mymodule
+            print(f"install bundle {component_generated.module_name}")
+            bundle = self.context.install_bundle(component_generated.module_name)
+            print(f"start bundle {component_generated.module_name}")
+            bundle.start()
+
+            return bundle
         except BaseException as e:
             print(f"error {e}")
-        sys.modules[component_generated.module_name] = mymodule
+            raise e
 
-        bundle = self.context.install_bundle(component_generated.module_name)
-        bundle.start()
-        return bundle
-
-    async def loads(self) -> t.List[Bundle]:
+    async def loads(self) -> None:
         """
         load all component discovered
         """
-
+        print("load all component discovered")
         for component_discovered in await self._component_repository.list():
             self.list_bundles.append(await self.load_discovered(component_discovered))
+            print(f"load {component_discovered.module_name}")
             _list = await self.generate(component_discovered)
             for generate_component in _list:
+                print(f"generate {generate_component.instance_name}")
                 self.generated_components[generate_component.instance_name] = (
                     generate_component
                 )
+                print(f"load {generate_component.instance_name}")
                 self.list_bundles.append(await self.load_generated(generate_component))
-
-        return self.list_bundles
+                print(f"load {generate_component.instance_name} done")
+        print("load all component discovered done")
+        self.controller = True
 
     @staticmethod
     async def get_requires_from_ycappuccino_component(
@@ -400,14 +419,21 @@ class {factory}Ipopo(Proxy):
         for prop in dec_tuple:
             properties_dump.append(
                 f"""
+    async def _bind(self,service):
+        await  self._obj.bind(service)
+        self.controller = True
+
     @BindField("{prop[0]}")
     def bind_{prop[0]}(self, field, service, service_ref):
-        asyncio.create_task(self._obj.bind(service))
+        execute_async_in_thread(self._bind,service)
+
+    async def _un_bind(self,service):
+        await  self._obj.un_bind(service)
+        self.controller = False
 
     @UnbindField("{prop[0]}")
     def un_bind_{prop[0]}(self, field, service, service_ref):
-        asyncio.create_task(self._obj.un_bind(service))
-
+        execute_async_in_thread(self._un_bind,service)
 """
             )
 

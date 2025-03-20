@@ -1,11 +1,12 @@
 from pelix.ipopo.decorators import  BindField, UnbindField,Instantiate, Requires, Provides, ComponentFactory, Property, Validate, Invalidate
 import asyncio
 from ycappuccino.api.proxy import Proxy
+from ycappuccino.api.executor_service import execute_async_in_thread
 from ycappuccino.core.services.base.list_components import ListComponent
 
 
 @ComponentFactory("ListComponentFactory")
-@Provides(specifications=["ListComponent","IListComponent","YCappuccinoComponent"])
+@Provides(specifications=["ListComponent","IListComponent","YCappuccinoComponent"], controller="controller")
 @Requires("ycappuccinoremote", "YCappuccinoRemote", optional=True,aggregate=True, spec_filter="")
 @Requires("logger", "IActivityLogger", optional=False,aggregate=False, spec_filter="(name=main)")
 
@@ -15,19 +16,33 @@ class ListComponentFactoryIpopo(Proxy):
     def __int__(self):
         super().__init__()
         self._context = None
+        self.controller = False
         self.ycappuccinoremote = None
         self.logger = None
 
+    async def _bind(self,service):
+        await  self._obj.bind(service)
+        self.controller = True
 
     @BindField("ycappuccinoremote")
     def bind_ycappuccinoremote(self, field, service, service_ref):
-        asyncio.create_task(self._obj.bind(service))
+        execute_async_in_thread(self._bind,service)
+
+    async def _un_bind(self,service):
+        await  self._obj.un_bind(service)
+        self.controller = False
 
     @UnbindField("ycappuccinoremote")
     def un_bind_ycappuccinoremote(self, field, service, service_ref):
-        asyncio.create_task(self._obj.un_bind(service))
+        execute_async_in_thread(self._un_bind,service)
 
+    async def _start(self):
+        await self._obj.start()
+        self.controller = True
 
+    async def _stop(self):
+        await self._obj.stop()
+        self.controller = False
 
     @Validate
     def validate(self, context):
@@ -35,11 +50,11 @@ class ListComponentFactoryIpopo(Proxy):
         self._obj = ListComponent(None if self.logger is None else  self.logger[0]._obj if  isinstance(self.logger,list) else self.logger._obj)
         self._obj._ipopo = self
         self._context = context
-        asyncio.create_task(self._obj.start())
+        execute_async_in_thread(self._start)
 
     @Invalidate
     def in_validate(self, context):
-        asyncio.create_task(self._obj.stop())
+        execute_async_in_thread(self._stop)
         self._objname = None
         self._obj = None
         self._context = None

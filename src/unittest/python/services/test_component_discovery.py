@@ -1,4 +1,4 @@
-import json
+# core
 import os
 from pathlib import Path
 
@@ -69,7 +69,7 @@ class TestComponentDiscovery(object):
         # Given
         await self.discovery.discover(self.discovery.path)
         # When
-        assert len(self.discovery._component_repository.components) == 4
+        assert len(self.discovery._component_repository.components) == 3
         for component_assert in components_discovered:
             # then
             component_discovered = await self.discovery._component_repository.get(

@@ -1,3 +1,4 @@
+# core
 import importlib.util
 from types import ModuleType
 from pelix.framework import BundleContext, Bundle

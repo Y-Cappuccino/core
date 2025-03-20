@@ -1,4 +1,4 @@
-import asyncio
+# core
 import os
 import sys
 import time
@@ -116,6 +116,18 @@ class PelixComponentRunner(IComponentRunner):
             ipopo.instantiate(
                 pelix.services.FACTORY_EVENT_ADMIN, "event-client_pyscript_core", {}
             )
+
+        for bundle_name, path in [
+            (
+                "ycappuccino.core.services.component_discovery",
+                component_discovery.__file__,
+            ),
+            ("ycappuccino.core.services.component_loader", component_loader.__file__),
+        ]:
+            # Install the bundle
+            bundle = self.ipopo.get_bundle_context().install_bundle(bundle_name, path)
+            # Start the bundle
+            bundle.start()
 
         # Instantiate ycappuccino core
         self.context = self.ipopo.get_bundle_context()

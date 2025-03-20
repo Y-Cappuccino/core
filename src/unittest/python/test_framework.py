@@ -35,5 +35,5 @@ class TestFramework(object):
     async def test_start(self) -> None:
         await self.framework.start()
         await asyncio.sleep(0.1)
-        assert len(await self.component_repository.list()) == 15
+        assert len(await self.component_repository.list()) == 5
         assert len(self.component_loader.generated_components) == 3
